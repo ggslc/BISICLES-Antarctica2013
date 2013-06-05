@@ -1,0 +1,31 @@
+!input files
+&files
+ ingeofile='bedmap2-1km.nc'
+ invelfile='Antarctica_ice_velocity-1km.nc'
+ insecfile='Antarctica_sectors-1km.nc'
+ intempfile='Antarctica-temperature-4km.nc'
+ outgeofile='asebm2-geometry-1km.nc'
+ outctrlfile='asebm2-ctrldata-1km.nc'
+ outsecfile='asebm2-sectors-1km.nc'
+ outtempfile='asebm2-temperature-4km.nc'
+/
+
+&dims
+ ixlo=1301
+ iylo=2269
+ nx=768
+ ny=896
+ nsigma=10
+/
+
+!only a few sectors should be present
+!in the selected area, make them all
+!quiescent apart from the ASE (sector 2)
+
+&quiescent
+qsectors(1) = 1
+qsectors(2) = 3
+qsectors(3) = 4
+qsectors(4) = 5
+
+/

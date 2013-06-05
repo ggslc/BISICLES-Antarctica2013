@@ -1,0 +1,16 @@
+HDF5_HOME=/data/ggslc/opt/BISICLES/hdf5/serial/
+NETCDF_HOME=/data/ggslc/opt/BISICLES/netcdf/serial/
+
+HDF5_INC_DIR=$(HDF5_HOME)/include
+HDF5_LIB_DIR=$(HDF5_HOME)/lib
+HDF5_LIB_FLAGS =-L$(HDF5_LIB_DIR)  -lhdf5 -lz
+
+NETCDF_INCDIR=$(NETCDF_HOME)/include
+NETCDF_LIB_DIR=$(NETCDF_HOME)/lib
+NETCDF_LIB_FLAGS = -L$(NETCDF_LIB_DIR)  -lnetcdff -lnetcdf -lhdf5_hl $(HDF5_LIB_FLAGS)
+
+export FC=gfortran
+
+
+
+
