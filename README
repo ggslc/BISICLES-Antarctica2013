@@ -1,0 +1,31 @@
+README
+
+Copyright Stephen L Cornford, 2013
+University of Bristol 
+ggslc@bristol.ac.uk
+
+This file is part of BISICLES-Antarctica2013.
+
+BISICLES-Antarctica2013 is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the 
+Free Software Foundation, either version 3 of the License, 
+or (at your option) any later version.
+
+BISICLES-Antarctica2013 is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License 
+along with Antarctica2013.  If not, see <http://www.gnu.org/licenses/>.
+
+BISICLES-Antarctica2013 is a collection of programs and notes related
+to the use of BISICLES (http://bisicles/lbl.org) to carry out simulations
+of the Antarctic ice sheet (either the whole ice sheet, or regions of it).
+The intention is that anyone that has BISICLES itself can use these programs
+and notes to
+
+1. Obtain the freely-available geometry and velocity data
+2. Obtain (non-free for now) temperature data
+3. Pre-process the data from 1. and 2. to provide inputs for BISICLES
+ 
