@@ -57,12 +57,17 @@ subroutine savesubset(x,y,topg,thk,usrf,mask,nx,ny,ixlo,ixhi,iylo,iyhi,file)
 
 end subroutine savesubset
 
-
-program makenc
+program subsetbm2
 !load the bedmap2 binary topography,thickness,and mask data and produce a netcdf file
  
   use ncio
    implicit none
+
+   character(len=512) :: exename, nmlfile
+   character(len=512) :: inthkfile,inusrffile,intopgfile,inmaskfile,outfile
+  namelist /bedmap2data/ inthkfile,inusrffile,intopgfile,inmaskfile,outfile
+
+
    real (kind=8), parameter :: rhoi = 918.0d0, rhoo = 1028.0d0, grav = 9.81d0, eps = 1.0e-3
   integer, parameter :: ewn=6667,nsn = 6667,nc=4, unit = 16, & 
        n = 6144, ewmin= 263 ,nsmin = 263 ,ewmax=ewmin+n-1,nsmax=nsmin+n-1
@@ -75,7 +80,21 @@ program makenc
 
   character(len=32) :: file
   real(kind=8) :: dx
-  integer i,j,ns,ilo,ihi,jlo,jhi
+  integer i,j,ns,ilo,ihi,jlo,jhi, argc
+  
+
+  call get_command_argument(0,exename)
+  argc = command_argument_count()
+  if (argc .ne. 1) then
+     write(*,*) "usage ", trim(exename),  &
+          " <namelist.nml> "
+     stop
+  end if
+
+  call get_command_argument(1,nmlfile)
+  open(8,file=nmlfile, status='OLD', recl=80, delim='APOSTROPHE')
+  !i/o files
+  read(8,nml=bedmap2data)
 
   dx = 1.0e+3
   x(1) = -3333500.0d0 + real(ewmin-1)*dx
@@ -86,14 +105,14 @@ program makenc
      y(i) = y(i-1) + dx
   end do
   
-  open(unit,file='bedmap2_bin/bedmap2_bed.flt', ACCESS='STREAM', FORM='UNFORMATTED')
+  open(unit,file=intopgfile, ACCESS='STREAM', FORM='UNFORMATTED')
   read(unit) sp
   close(unit)
   do i = 0,n-1
      topg(:,n-i) = sp(ewmin:ewmax,i+nsmin)
   end do
 
-  open(unit,file='bedmap2_bin/bedmap2_thickness.flt', ACCESS='STREAM', FORM='UNFORMATTED')
+  open(unit,file=inthkfile, ACCESS='STREAM', FORM='UNFORMATTED')
   read(unit) sp
   close(unit)
   do i = 0,n-1
@@ -104,7 +123,7 @@ program makenc
      thk(:,:) = 0.0d0
   end where
 
-  open(unit,file='bedmap2_bin/bedmap2_icemask_grounded_and_shelves.flt', ACCESS='STREAM', FORM='UNFORMATTED')
+  open(unit,file=inmaskfile, ACCESS='STREAM', FORM='UNFORMATTED')
   read(unit) sp
   close(unit)
   do i = 0,n-1
@@ -116,7 +135,7 @@ program makenc
   end where
 
 
-  open(unit,file='bedmap2_bin/bedmap2_surface.flt', ACCESS='STREAM', FORM='UNFORMATTED')
+  open(unit,file=inusrffile, ACCESS='STREAM', FORM='UNFORMATTED')
   read(unit) sp
   close(unit)
   do i = 0,n-1
@@ -126,18 +145,18 @@ program makenc
      usrf = 0.0
   end where
 
-  call savesubset(x,y,topg,thk,usrf,mask,n,n,1,n,1,n,"bedmap2-1km.nc")
+  call savesubset(x,y,topg,thk,usrf,mask,n,n,1,n,1,n,outfile)
 
-  ns = 768
-  do i = 1,n/ns
-     do j = 1,n/ns
-        write (file,'("bedmap2-1km-E",i1,"N",i1".nc")') i,j
-        ilo = (i-1)*ns+1
-        ihi = ilo + ns 
-        jlo = (j-1)*ns+1
-        jhi = jlo + ns 
-        call savesubset(x,y,topg,thk,usrf,mask,n,n,ilo,ihi,jlo,jhi,file)
-     end do
-  end do
+  !ns = 768
+  !do i = 1,n/ns
+  !   do j = 1,n/ns
+  !      write (file,'("bedmap2-1km-E",i1,"N",i1".nc")') i,j
+  !      ilo = (i-1)*ns+1
+  !      ihi = ilo + ns 
+  !      jlo = (j-1)*ns+1
+  !      jhi = jlo + ns 
+  !      call savesubset(x,y,topg,thk,usrf,mask,n,n,ilo,ihi,jlo,jhi,file)
+  !   end do
+  !end do
 
-end program makenc
+end program subsetbm2

@@ -88,7 +88,12 @@ end subroutine injectposdef
 program rignot
   use ncio
   implicit none
-  character(len=64)  ufile,vfile
+  
+  character(len=512) :: exename, nmlfile
+  character(len=512) :: infile,outfile
+  namelist /rignotveldata/ infile,outfile
+
+ 
 
   !RIGNOT (900m) data
   integer, parameter :: ewnr = 6223, nsnr = 6223
@@ -110,9 +115,22 @@ program rignot
   real(kind=8), dimension(1:nsns) :: ys
   integer, dimension(2) :: lo
 
-  integer i,j,k,a,b,n,m,ilo,ihi,jlo,jhi
+  integer i,j,k,a,b,n,m,ilo,ihi,jlo,jhi,argc
 
 
+  call get_command_argument(0,exename)
+  argc = command_argument_count()
+  if (argc .ne. 1) then
+     write(*,*) "usage ", trim(exename),  &
+          " <namelist.nml> "
+     stop
+  end if
+
+  call get_command_argument(1,nmlfile)
+  open(8,file=nmlfile, status='OLD', recl=80, delim='APOSTROPHE')
+  !i/o files
+  read(8,nml=rignotveldata)  
+  
   !x and y-coords the 6144 * 6144 1km BEDMAP2 grid
   x(1) = -3071500.0d0
   do i = 2,ewn
@@ -141,44 +159,27 @@ program rignot
 
 
   !load the x- and y- velocity components, and re-order in y
-  call ncloadonenoxy(umodr,"Antarctica_ice_velocity.nc","vx",ewnr,nsnr)
-  call ncloadonenoxy(tmpr,"Antarctica_ice_velocity.nc","vy",ewnr,nsnr)
+  call ncloadonenoxy(umodr,infile,"vx",ewnr,nsnr)
+  call ncloadonenoxy(tmpr,infile,"vy",ewnr,nsnr)
   tmpr = sqrt(umodr*umodr + tmpr*tmpr)
   do j = 1,nsn
      umodr(:,j) = tmpr(:,nsnr+1-j)
   end do
 
-  !write out a subset, just so I can look at it 
-  ilo = 1000
-  jlo = 2000
-  ihi = ilo + ewns - 1
-  jhi = jlo + nsns - 1
-  xs = xr(ilo:ihi) 
-  ys = yr(jlo:jhi) 
-  umods=umodr(ilo:ihi,jlo:jhi)
-  call ncsaveone(xs,ys,umods,ewns,nsns,"subset.nc","umod")
-
-
-  write(*,*) minval(umodr), " <= umodr <= ", maxval(umodr)
-
   !interpolate
   umod = 0.0d0
   call injectposdef(umodr,xr,yr,ewnr,nsnr,umod,x,y,ewn,nsn)
-  write(*,*) minval(umod), " <= umod <= ", maxval(umod)
-  call ncsaveone(x,y,umod,ewn,nsn,"Antarctica_ice_velocity-1km.nc","umod")
+  call ncsaveone(x,y,umod,ewn,nsn,outfile,"umod")
 
 
   !load the error estimate, and re-order in y
-  call ncloadonenoxybyte(tmpr,"Antarctica_ice_velocity.nc","err",ewnr,nsnr)
-  do j = 1,nsn
-     umodr(:,j) = tmpr(:,nsnr+1-j)
-  end do
-   umodc = 0.0d0
-  call injectposdef(umodr,xr,yr,ewnr,nsnr,umodc,x,y,ewn,nsn)
-
-
-
-  call ncsaveone(x,y,umodc,ewn,nsn,"Antarctica_ice_velocity-err-1km.nc","umodc")
+  !call ncloadonenoxybyte(tmpr,"Antarctica_ice_velocity.nc","err",ewnr,nsnr)
+  !do j = 1,nsn
+  !   umodr(:,j) = tmpr(:,nsnr+1-j)
+  !end do
+  ! umodc = 0.0d0
+  !call injectposdef(umodr,xr,yr,ewnr,nsnr,umodc,x,y,ewn,nsn)
+  !call ncsaveone(x,y,umodc,ewn,nsn,"Antarctica_ice_velocity-err-1km.nc","umodc")
   
 
 end program rignot

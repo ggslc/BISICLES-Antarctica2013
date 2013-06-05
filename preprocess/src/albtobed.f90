@@ -139,7 +139,7 @@ subroutine growtemp(temp,thk,ewn,nsn,niter)
   thkb = thk
 
   do iter = 1,niter
-     write(*,*) 'growtemp iteration ',iter
+    
      tempa = temp
      thka = thkb
      do ns = 2,nsn-1
@@ -214,7 +214,10 @@ program albtobed
   use tempmod
   implicit none
   
-  character(len=64)  albmap
+  
+  character(len=512) :: exename, nmlfile
+  character(len=512) :: intempfile,outtempfile,insecfile,outsecfile
+  namelist /albmapdata/ intempfile,outtempfile,insecfile,outsecfile
   
   integer, parameter :: upn = 10
   character(len=10), dimension(upn) :: tempnames
@@ -251,8 +254,24 @@ program albtobed
   integer, parameter :: ewmin= 263 ,nsmin = 263 !start of 6144*6144 BEDMAP2
   !  data relative to base BEDMAP2 6777*6777 data
 
-  integer i,j,k
+  integer i,j,k,argc
   real(kind=8) dxa,dx,dxc,dxcc
+
+   call get_command_argument(0,exename)
+  argc = command_argument_count()
+  if (argc .ne. 1) then
+     write(*,*) "usage ", trim(exename),  &
+          " <namelist.nml> "
+     stop
+  end if
+
+  call get_command_argument(1,nmlfile)
+  open(8,file=nmlfile, status='OLD', recl=80, delim='APOSTROPHE')
+  !i/o files
+  read(8,nml=albmapdata)
+
+
+
   dxa = 5.0d+3 ! ALBMAP resolution
   dx = 1.0d+3  ! BEDMAP2 resolution
   dxc = 2.0d0 * dx
@@ -271,11 +290,6 @@ program albtobed
   end do
   
   
-
-  !albmap input file, copied from Antarctica2012 work. HAS 
-  albmap = "ALBMAP_i2s_4BISICLES.nc"
-  
-
   !Frank Pattyn temperature data on ALBMAP  
   do i = 1,upn
      if (i .lt.10) then
@@ -283,9 +297,9 @@ program albtobed
      else
         write(tempname,'("temp",i2)') i
      end if
-     call ncloadone(xa,ya,tmpa,albmap,tempname,ewna,nsna)
+     call ncloadone(xa,ya,tmpa,intempfile,tempname,ewna,nsna)
      if (i .eq. 1) then
-        call ncloadone(xa,ya,thka,albmap,"thick",ewna,nsna)
+        call ncloadone(xa,ya,thka,intempfile,"thick",ewna,nsna)
      end if
 
      call growtemp(tmpa,thka,ewna,nsna,20)
@@ -293,10 +307,7 @@ program albtobed
 
      call inject(tmp,x,y,ewn,nsn,tmpa,xa,ya,ewna,nsna)
 
-     if (i.eq.1) then
-        call ncsaveone(xa,ya,tmpa,ewna,nsna,"test.nc","stemp")
-     end if
-
+   
      !coarsen(nf,xf,yf,nc,xc,yc,af,ac,ncomp)
      call coarsen( ewn, x, y, ewnc, xc, yc, tmp, tmpc, 1)
      call coarsen( ewnc, xc, yc, ewncc, xcc, ycc, tmpc, tmpcc, 1)
@@ -307,14 +318,14 @@ program albtobed
 
   call sanetemp(tempcc,ewncc,nsncc,upn,dxcc*4.0,dxcc)
   
-  call ncsaven(xcc,ycc,tempcc,ewncc,nsncc,upn,"Antarctica-temperature-4km.nc",tempnames)
+  call ncsaven(xcc,ycc,tempcc,ewncc,nsncc,upn,outtempfile,tempnames)
   
   !sector data on ALBMAP 
-  call ncloadonenoxy(smasks,'sectormask_highres_v3.nc','sectors',1160,1120)
+  call ncloadonenoxy(smasks,insecfile,'sectors',1160,1120)
   tmpa = 0.0
   tmpa(1:1160,1:1120) = smasks
   call inject(tmp,x,y,ewn,nsn,tmpa,xa,ya,ewna,nsna)
-  call ncsaveone(x,y,tmp,ewn,nsn,"Antarctica_sectors-1km.nc","smask")
+  call ncsaveone(x,y,tmp,ewn,nsn,outsecfile,"smask")
 
 
 end program albtobed

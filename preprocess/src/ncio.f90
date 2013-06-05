@@ -103,6 +103,27 @@ contains
     return
   end subroutine ncloadone
 
+  subroutine ncloadonenoxybyte(a,file,field,ewn,nsn)
+    integer ewn,nsn
+    
+    real(kind=8), dimension(1:ewn,1:nsn) :: a
+    integer(kind=1), dimension(1:ewn,1:nsn) :: b
+
+    character(len=*),intent(in) :: file, field
+    integer  var_id, nc_id
+    
+    call nccheck( nf90_open(file, NF90_NOWRITE, nc_id) )
+    
+
+    call nccheck( nf90_inq_varid(nc_id, field, var_id) )
+    call nccheck( nf90_get_var(nc_id, var_id , b) )
+    call nccheck( nf90_close(nc_id) )
+ 
+
+    a = dble(b)
+    return
+  end subroutine ncloadonenoxybyte
+
 
   subroutine ncsaven(x,y,c,ewn,nsn,nc,file,field)
     !write a 2D netcdf file 'file' with 1 <= ic <= nc fields named field(ic)

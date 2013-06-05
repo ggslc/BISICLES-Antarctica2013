@@ -1,26 +1,23 @@
-FC = gfortran
-CC=gcc
-UNAMEN := $(shell uname -n)
+include ../Make.defs
 
-#netcdf location
-NETCDF_HOME = /data/ggslc/opt/BISICLES/netcdf/serial
-HDF5_HOME =  /data/ggslc/opt/BISICLES/hdf5/serial
+FCFLAGS +=  -I. -I $(NETCDF_INCDIR)
+LIBFLAGS = $(NETCDF_LIB_FLAGS)
+
+COMOBJS = ncio.o mgrelax.o
+MAINS=subsetbm2.f90 prepcontrol.f90 rignot.f90 albtobed.f90
+MAINOBJS = $(patsubst %.f90,%.o,$(MAINS))
+
+EXES = $(patsubst %.f90,%.ex,$(MAINS))
 
 
-FFLAGS = -g  -I. -I$(NETCDF_HOME)/include -I$(HDF5_HOME)/include 
-LIBFLAGS = -L$(NETCDF_HOME)/lib -lnetcdff -lnetcdf -L$(HDF5_HOME)/lib -lhdf5_hl -lhdf5 -lz
+all : $(COMOBJS) $(MAINOBJS) $(EXES)
 
-
-OBJS = ncio.o mgrelax.o prepcontrol.o
-
-prepcontrol: $(OBJS)
-	$(FC) $(FFLAGS) -o prepcontrol $(OBJS)  $(LIBFLAGS)
+%.ex :  %.o $(OBJS)
+	$(FC) $(FCFLAGS)   $< -o $@ $(COMOBJS) $(LIBFLAGS)
 
 %.o : %.f90 
-	$(FC) $(FFLAGS) -c  $< -o $@
+	$(FC) $(FCFLAGS) -c  $< -o $@
 
-clean: 
-	$(RM) $(OBJS) prepcontrol
+clean :
+	$(RM) $(COMOBJS) $(MAINOBJS) $(EXES) *.mod
 
-realclean:
-	$(RM) $(OBJS) prepcontrol *.mod
