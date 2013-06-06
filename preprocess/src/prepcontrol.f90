@@ -526,6 +526,7 @@ subroutine prep()
 
   call ncloadone(xt,yt,tmp,insecfile,"smask",nxin,nyin)
   sec = tmp(ixlo:ixhi, iylo:iyhi)
+  call ncsaveone(x,y,sec,nx,ny,outsecfile,"smask")
 
   !grow the velocity into missing regions befoire estimating corigin
   call growposdef(umodg,umod,nx,ny,1.0d0,100)
