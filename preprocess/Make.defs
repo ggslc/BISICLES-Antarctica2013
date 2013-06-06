@@ -1,5 +1,8 @@
-HDF5_HOME=/data/ggslc/opt/BISICLES/hdf5/serial/
-NETCDF_HOME=/data/ggslc/opt/BISICLES/netcdf/serial/
+BISICLES_HOME=/data/ggslc/opt/BISICLES
+
+NCTOAMR=$(BISICLES_HOME)/BISICLES/code/filetools/nctoamr2d.Linux.64.g++.gfortran.DEBUG.OPT.ex
+HDF5_HOME=$(BISICLES_HOME)/hdf5/serial/
+NETCDF_HOME=$(BISICLES_HOME)/netcdf/serial/
 
 HDF5_INC_DIR=$(HDF5_HOME)/include
 HDF5_LIB_DIR=$(HDF5_HOME)/lib
@@ -10,7 +13,7 @@ NETCDF_LIB_DIR=$(NETCDF_HOME)/lib
 NETCDF_LIB_FLAGS = -L$(NETCDF_LIB_DIR)  -lnetcdff -lnetcdf -lhdf5_hl $(HDF5_LIB_FLAGS)
 
 FC=gfortran
-FCFLAGS=-g
+FCFLAGS=-O3
 
 
 
