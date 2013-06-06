@@ -1,0 +1,477 @@
+\documentclass{article}
+\usepackage[paperwidth=180mm,paperheight=200mm,left=10mm,right=10mm,top=10mm,bottom=10mm]{geometry}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{listings}
+\setlength{\parskip}{2mm}
+\setlength{\parindent}{0mm}
+ \usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\title{Antarctica 2013 (all Antarctica) control problem}
+\author{S L Cornford}
+\date{3 Jun 2013}
+
+\newcommand{\usrf}{s}
+\newcommand{\topg}{r}
+\newcommand{\thk}{h}
+
+\lstset{language=Fortran,basicstyle=\scriptsize,commentstyle=\color{red}
+}
+
+
+\begin{document}
+\pagestyle{plain}
+\maketitle
+\tableofcontents
+\section{Data Sources}
+\subsection{Geometry}
+
+Thickness and topography data are taken from Bedmap2\cite{FPVB13:doi:10.5194/tc-7-375-2013}. The Bedmap2 data are provided
+on a $\Delta x = 1$~km, 6777 $\times$ 6777 grid centered on the South Pole, and are stored in
+\begin{verbatim}
+Antarctica2013/bedmap2_data/bedmap2_bin
+\end{verbatim}
+
+We need to set bedmap2 on a multigrid-friendly domain. I chose a 6144$\times$6144 domain, which
+includes the entire continental shelf. The program makenc.f90 is used to this end, it also does a little
+bit of preprocessing (but more is done in the programs described in section \ref{sec::preprocessing})
+
+{\large {\bf update  4 Jun 2013}}
+
+Removed the pre-processing from makenc.f90, now it simply subsets and writes the fields
+topg (topography), thk(thickness), usrf (surface elevation), mask (land ice / ice shelf mask).
+All pre-processing of thickness, topography is to be carried out in section \ref{sec::preprocessing}.
+
+%\begin{itemize}
+%\item{Lake Vostok's $\sim 800$~m deep water is removed and replaced with ice}
+\subsubsection{Crop domain}
+
+\begin{lstlisting}
+integer, parameter :: ewn=6667,nsn = 6667,nc=4, unit = 16, & 
+       n = 6144, ewmin= 263 ,nsmin = 263 ,ewmax=ewmin+n-1,nsmax=nsmin+n-1
+!etc
+  open(unit,file='bedmap2_bin/bedmap2_bed.flt', & 
+  ACCESS='STREAM', FORM='UNFORMATTED')
+  read(unit) sp
+  close(unit)
+  do i = 0,n-1
+     dp(:,n-i,1) = sp(ewmin:ewmax,i+nsmin)
+  end do
+  field(1)="topg"
+!etc
+\end{lstlisting}
+
+\subsubsection{Remove Lake Vostok}
+Lake Vostok's $\sim 800$~m deep water is removed and replaced with rock
+\begin{lstlisting}
+  ia = 4610 - 400 - ewmin
+  ib = ia + 800
+  ja = 2974 - 400 - nsmin
+  jb = ja + 800
+  where ( (dp(ia:ib,ja:jb,1) + dp(ia:ib,ja:jb,2)) .lt.  bmusrf(ia:ib,ja:jb))
+     dp(ia:ib,ja:jb,1) = bmusrf(ia:ib,ja:jb) - dp(ia:ib,ja:jb,2) 
+     !dp(:,:,1) stores topography
+  end where
+\end{lstlisting}
+
+\subsubsection{Correction where $\topg + \thk > \usrf$.} 
+\begin{lstlisting}
+  !a few spots where topography + thickness > surface : reduce thickness
+  where ( (dp(:,:,1) + dp(:,:,2)) .gt.  bmusrf + eps)
+      dp(:,:,2) = bmusrf - dp(:,:,1)
+      !dp(:,:,2) stores thickness
+  end where
+\end{lstlisting}
+
+\subsubsection{Adjust thickness so that ice shelves float}
+\begin{lstlisting}
+  real (kind=8), parameter :: rhoi = 918.0d0, rhoo = 1028.0d0
+  !etc
+ !ensure that the ice shelves (as specified by the bedmap2 mask) are floating
+  where ( ( dp(:,:,2) .gt. eps) .and. ( dp(:,:,4) .gt. 0.9))
+     dp(:,:,2) = min(dp(:,:,2), -rhoo/rhoi*dp(:,:,1) -1.0)
+  end where
+\end{lstlisting}
+
+The thickness and topography data is written to {\tt Antarctica2013/bedmap2\_data/bedmap2-1km.nc}
+
+
+
+\subsection{Velocity}
+
+Velocity data are taken from Rignot's NSIDC 2011 data \cite{RiMS11:doi:10.1126/science.1208336}.
+The raw data, stored in
+\begin{verbatim}
+Antarctica2013/rignot_velocity_data/Antarctica_ice_velocity.nc
+\end{verbatim}
+is sited on a 6233 $\times$ 6233 grid with  $\Delta x = 0.9$~km, and so needs to be interpolated
+onto a 6144$\times$6144, $\Delta x = 1$~km domain. This is done in the program  rignot.f90, which
+produces the file
+\begin{verbatim}
+Antarctica2013/rignot_velocity_data/Antarctica_ice_velocity-1km.nc
+\end{verbatim}
+For now, I only keep the modulus of velocity.
+
+\subsection{Temperature}
+
+Temperature data is the same as we used Antarctica2012. It is taken from Pattyn (2010), and
+is stored in the ALBMAP grid in the file Rupert provided:
+\begin{verbatim}
+Antarctica2013/albmap_data/ALBMAP_i2s_4BISICLES.nc
+\end{verbatim}
+We need to place this on a grid that is compatible with the 1~km bedmap2 grid, ie a 
+grid where \\ $\Delta x \in \left \{ \ldots, \frac{1}{2}, 1, 2, 4,\ldots \right \}$. I chose 
+$\Delta x 4$~km to save memory. The program
+albtobed.f90 carries this out and produces the file
+\begin{verbatim}
+Antarctica2013/albmap_data/Antarctica-temperature-4km.nc
+\end{verbatim}
+There is some preprocessing in this program too, the temperature is first
+grown into the sea (subroutine growtemp) then modified such that it cannot increase
+by more than 5 K between layers, then smoothed (subroutine sanetemp)
+
+\subsection{Sector map}
+
+The same program, albtobed.f90, writes a 1 km resolution sector map 
+\begin{verbatim}
+Antarctica2013/albmap_data/Antarctica_sectors-1km.nc
+\end{verbatim}
+
+\section{\label{sec::preprocessing}Preprocessing}
+
+The majority of the preprocessing takes place in
+\begin{verbatim}
+Antarctica2013/prep_control/prepcontrol.f90
+\end{verbatim}
+The script
+\begin{verbatim}
+Antarctica2013/prep_control/prep_antarctica.sh
+\end{verbatim}
+builds and runs this program, and converts its netcdf output into the hdf5 format that 
+BISICLES can load.
+
+Program prepcontrol.f90 takes a namelist argument, which specifies the inputs files, output files, which regions
+are to be quiescent. For the whole of Antarctica, the namelist
+antarctica.nml was used.
+\begin{verbatim}
+!input files
+&files
+ ingeofile='bedmap2-1km.nc'
+ invelfile='Antarctica_ice_velocity-1km.nc'
+ insecfile='Antarctica_sectors-1km.nc'
+ intempfile='Antarctica-temperature-4km.nc'
+ outgeofile='antarcticabm2-geometry-1km.nc'
+ outctrlfile='antarcticabm2-ctrldata-1km.nc'
+ outsecfile='anatrcticabm2-sectors-1km.nc'
+ outtempfile='antarcticabm2-temperature-4km.nc'
+/
+
+&dims
+ ixlo=1
+ iylo=1
+ nx=6144
+ ny=6144
+ nsigma=10
+/
+
+!no quiescent regions
+&quiescent
+
+/
+\end{verbatim}
+
+Preprocessing consists of several modifications to the topography and thickness
+fields, and an initial guess for the basal traction coeffcient $C$, called $C_0$.
+
+\subsection{\label{sec::limthk} Correction where $\topg + \thk > \usrf$.}
+
+There are a few spots, e.g around $(x,y) = (-36,1993)$~km, where $\topg + \thk > \usrf$.
+Reduce the thickness in those regions
+\begin{lstlisting}
+!ensure thk + topg <= usrf... 
+  where (thk + topg .gt. usrf + cm)
+     thk = usrf - topg
+  end where
+\end{lstlisting}
+
+\subsection{\label{sec::limthk} Revised modification to shelves.}
+
+The original modification (reduce thickness to presrve mask)
+\begin{lstlisting}
+  where ( ( thk .gt. cm) .and. ( mask .gt. 0.9))
+     thk = min(thk, -rhoo/rhoi*topg -1.0)
+  end where
+\end{lstlisting}
+worked poorly in Amery Ice Shelf
+
+An alternate modification lowers the topography to preserve 
+the mask provided that the resulting surface does not
+change too much
+\begin{lstlisting}
+!try to preserve mask, but limit change in surface
+  where ( (mask.gt.0.99) .and. ( abs ( usrf - thk*(1.0d0-rhoi/rhoo)) .le. 30.0))
+     topg = min(topg, -20.0 - rhoo/rhoi*thk
+  end where
+\end{lstlisting}
+
+\subsection{\label{sec::rlv} Remove Lake Vostok}
+
+Lake Vostok is filled with 800m deep water, but we don't really support subglacial
+lakes (water above sea-level). So, fill it with rock.
+
+
+\begin{lstlisting}
+  subroutine removelakevostok(thk,topg,usrf,x,y,nx,ny)
+    integer, intent(in) :: nx,ny
+    real(kind=8), dimension(1:nx,1:ny), intent(inout) :: thk,topg,usrf
+    real(kind=8), dimension(1:nx), intent(in) :: x
+    real(kind=8), dimension(1:ny), intent(in) :: y
+
+    integer :: i,j,ilo,jlo,ihi,jhi,ncells
+    real(kind=8) :: dx,r
+
+    dx = x(2) - x(1)
+    r = rhoo/rhoi
+    call computebox(ncells,ilo,ihi,jlo,jhi, & 
+         1.2d+6,-0.4d+6,1.46d+6,-0.3d+6,x,y,nx,ny)
+    if (ncells.gt.0) then
+       topg(ilo:ihi,jlo:jhi) = usrf(ilo:ihi,jlo:jhi)-thk(ilo:ihi,jlo:jhi)
+    end if
+
+  end subroutine removelakevostok
+\end{lstlisting}
+
+
+\subsection{\label{sec::rtt} Remove thin tongues}
+There are three thin ice tongues that cause the solvers to stagnate (Drygalski, Mertz, and one 
+more in Lutzow-Holm bay). Since they have no influence in the upstream ice, I remove them
+
+\begin{lstlisting}
+  subroutine computebox(ncells,ilo,ihi,jlo,jhi,xmin,ymin,xmax,ymax,x,y,nx,ny)
+  !find the largest box such that xmin < x < xmax and ymin < y < ymax
+  !which fits inside the box x(1) < x < x(nx) and y(1) < y < y(ny)
+  !...
+  return
+  end subroutine computebox
+  
+   subroutine removethintongues(thk,topg,umod,x,y,nx,ny)
+    !there are three thin floating tonugues which cause the solvers
+    !to converge slowly. Since they don't affect the upstream 
+    !dynamics, snip them off
+
+    
+    integer, intent(in) :: nx,ny
+    real(kind=8), dimension(1:nx,1:ny), intent(inout) :: thk,topg,umod
+    real(kind=8), dimension(1:nx), intent(in) :: x
+    real(kind=8), dimension(1:ny), intent(in) :: y
+
+    integer :: i,j,ilo,jlo,ihi,jhi,ncells
+    real(kind=8) :: dx,r
+    dx = x(2) - x(1)
+    r = (1-rhoi/rhoo)
+
+  !Tongue 1, East Antarctica near to Lutzow-Holm bay
+  call computebox(ncells,ilo,ihi,jlo,jhi,1.35d+6,1.775d+6,1.4d+6,2.075d+6,x,y,nx,ny)
+  if (ncells.gt.0) then
+    where (r * thk(ilo:ihi,jlo:jhi).gt.(thk(ilo:ihi,jlo:jhi) + topg(ilo:ihi,jlo:jhi))) 
+      thk(ilo:ihi,jlo:jhi) = 0.0d0
+    end where
+  end if
+  
+  !Tongue 2, East Antarctica Near to East Adelie land (Mertz tongue)   
+  call computebox(ncells,ilo,ihi,jlo,jhi,1.39d+6,-2.14d+6,1.46d+6,-2.05d+6,x,y,nx,ny)
+  if (ncells.gt.0) then
+     where (r * thk(ilo:ihi,jlo:jhi).gt.(thk(ilo:ihi,jlo:jhi) + topg(ilo:ihi,jlo:jhi))) 
+        thk(ilo:ihi,jlo:jhi) = 0.0d0
+     end where
+  end if
+
+  !Tongue 3, East Antarctic near to McMurdo (Drygalski tongue)
+  call computebox(ncells,ilo,ihi,jlo,jhi,0.36d+6,-1.55d+6,0.46d+6,-1.25d+6,x,y,nx,ny)
+  if (ncells.gt.0) then
+     where (r * thk(ilo:ihi,jlo:jhi).gt.(thk(ilo:ihi,jlo:jhi) + topg(ilo:ihi,jlo:jhi))) 
+        thk(ilo:ihi,jlo:jhi) = 0.0d0
+     end where
+  end if
+
+  end subroutine removethintongues
+
+\end{lstlisting}
+
+
+\subsection{\label{sec::fts} Fix Thwaites' shelf}
+
+Like ALBMAP, Bedmap2 does not have a grounded tip on Thwaites' Eastern (slow moving) ice shelf.
+Such a grounded region is implied by the velcity fields, which slow down in that region - impossible
+without some sort of buttress. As before, we ground the tip. We also remove some `hangnails' on the
+western side of the fast tongue, these were problematic in Antarctica2012
+\begin{lstlisting}
+
+  subroutine fixthwaitesshelf(thk,topg,umod,x,y,nx,ny)
+    !bedmap2 has thaites shelf free-floating, but
+    !the rignot velocity data has it grounded at the tip
+    !Also, remove a hangnail
+
+    integer, intent(in) :: nx,ny
+    real(kind=8), dimension(1:nx,1:ny), intent(inout) :: thk,topg,umod
+    real(kind=8), dimension(1:nx), intent(in) :: x
+    real(kind=8), dimension(1:ny), intent(in) :: y
+
+    integer :: i,j,ilo,jlo,ihi,jhi,ncells
+    real(kind=8) :: dx,r
+
+    dx = x(2) - x(1)
+    r = rhoo/rhoi
+
+    !ground tip   
+    call computebox(ncells,ilo,ihi,jlo,jhi,-1.598d+6,-0.458d+6,-1.586d+6,-0.446d+6,x,y,nx,ny)
+    if (ncells.gt.0) then
+
+       do j = jlo,jhi
+          do i = ilo,ihi
+             if ( (umod(i,j).gt.1.0d0) .and. (umod(i,j).lt.300.0d0)) then
+                if (thk(i,j).gt.1.0d0) then
+                   if (topg(i,j).gt.-800.0d0) then
+                      topg(i,j) = max(topg(i,j),(-300.0d0*0.750d0 + topg(i,j)*0.25))
+                      thk(i,j) = max(thk(i,j),-r*topg(i,j) + 20.0d0)
+                   end if
+                end if
+             end if
+          end do
+       end do
+    end if
+
+    !hangnails
+    call computebox(ncells,ilo,ihi,jlo,jhi,-1.565d+6,-0.512d+6,-1.545d+6,-0.502d+6,x,y,nx,ny)
+    if (ncells.gt.0) then
+       write(*,*) ncells,ilo,ihi,jlo,jhi
+       thk(ilo:ihi,jlo:jhi) = 0.0d0
+    end if
+
+    call computebox(ncells,ilo,ihi,jlo,jhi,-1.602d+6,-0.479d+6,-1.597d+6,-0.473d+6,x,y,nx,ny)
+    if (ncells.gt.0) then
+       thk(ilo:ihi,jlo:jhi) = 0.0d0
+    end if
+
+  end subroutine fixthwaitesshelf
+\end{lstlisting}
+
+\subsection{\label{sec::cco} Compute $C_0$}
+
+$C_0$ is calculated by the formula
+\begin{equation}
+C_0 = \frac{\left | \rho g \thk \nabla{\usrf^{*}}  \right |}{ \left | u_{\rm obs}^{*}  \right | }
+\end{equation}
+where $\usrf^{*}$ and $u_{\rm obs}^{*}$ are derived from the observed speed $\left| u_{\rm obs} \right |$
+and the surface $\usrf$ computed from the topography and thickness.
+
+As the raw surface is noisy, numerical differentation is ill-posed, so we create a smoothed
+surface $\usrf^{*}$ by solving
+\begin{equation}
+\usrf^{*} - \lambda \nabla^2 \usrf^{*} = \usrf \qquad \lambda = 8 \mbox{~km}
+\end{equation}
+with natural boundary conditions
+
+The observed speed $\left| u_{\rm obs} \right |$ has a number of missing regions.
+We need values everywhere to compute $C_0$. We grow them by repeatedly averaging
+the values in cells with $\left| u_{\rm obs} \right | < 1$  from neighbour cells 
+that have $\left| u_{\rm obs} \right | > 1$. We do not need these grown regions in the control problem proper. 
+
+\subsection{\label{sec::rri} Remove remote ice}
+
+Ice that is not connected to grounded ice on the main continental mass 
+is identified and removed
+
+\section{Control Problem}
+
+
+\subsection{Test run 001}
+
+Test run 001 was run on May 31 2013, with finest resolutions of 4, 2 , and 1 km.
+Preprocessing consisted of \ref{sec::rtt}, \ref{sec::fts}, \ref{sec::cco}, \ref{sec::rri}
+
+\begin{verbatim}
+#control problem parameters
+control.velMisfitCoefficient = 1.0
+control.massImbalanceCoefficient = 0.0e+2
+control.gradCsqRegularization = 1.0e+0
+control.gradMuCoefsqRegularization = 0.0e+3
+control.muCoefLEQOne = FALSE
+control.X0Regularization = 1.0e+3
+control.X1Regularization = 1.0e+5
+control.boundArgX0 = 5.0
+control.boundArgX1 = 2.5
+control.writeInnerSteps = true
+control.outerStepFileNameBase = antarcticabm2-ctrl-4lev-outer.
+control.innerStepFileNameBase = antarcticabm2-ctrl-4lev-inner.
+control.CGsecantStepMaxGrow = 2.0
+control.initialMu = 1.0e+6
+control.CGmaxIter = 32
+control.CGtol = 1.0e-6
+control.CGsecantParameter = 1.0e-8
+control.CGsecantMaxIter = 20
+control.CGsecantTol = 1.0e-1
+amr.max_box_size = 64
+amr.max_level = 4
+amr.refinement_ratios = 2 2 2 2 2 2 
+amr.blockFactor = 8          # block factor used in grid generation
+amr.fillRatio = 0.8          # how efficient are the grids
+amr.nestingRadius = 1        # proper nesting radius required
+amr.tags_grow = 1            # amount o buffer tags
+amr.max_vel_dx = 1.0e+6
+\end{verbatim}
+
+Blue crystal 2 managed about 1 CG iteration per hour, on 8,16,32 CPUs for the 
+4, 2 , and 1 km problems. The 1 km problem is of most interest
+
+\begin{center}
+\includegraphics[width=.75\textwidth]{Antarctica2013-all-control.gfx/AMR0000}
+\end{center}
+
+After 6 CG iterations, residual L2-norm is reduced from 8e16 to 1e16. 
+Velocity field looks smooth, and about right in most of the domain (as it does from the start)
+
+\begin{center}
+\includegraphics[width=.75\textwidth]{Antarctica2013-all-control.gfx/AMR0001}
+\end{center}
+
+Enhancement factor (muCoef) showing usual pattern in ASE, Filchner-Ronne, with
+weak shear margins and stiffer shelves. 
+
+\begin{center}
+\includegraphics[width=.75\textwidth]{Antarctica2013-all-control.gfx/AMR0002}
+\end{center}
+
+Extreme stiffenning in Amery near its Southern end, epsecially at 'lower' (East) wall (scale
+is satuarated). This seems to be an artifact generated to reduce spurious high speed there
+
+
+\begin{center}
+\includegraphics[width=.75\textwidth]{Antarctica2013-all-control.gfx/AMR0004}
+\end{center}
+
+Velocity vectors pointing across the stream : shelf thins toward edge - is this an artifact
+of preprocessing from section (1), ie we made the ice to thin to avoid grouding it. If
+so, better to ground it. Amery also has a noticable discontinuity in the surface elevation at the
+GL, so maybe we need a firn correction as Anne did for ALBMAP.
+
+\begin{center}
+\includegraphics[width=.75\textwidth]{Antarctica2013-all-control.gfx/AMR0005}
+\end{center}
+
+Cross stream velocity also apparent in Rutford ice stream: Here ice is falling into
+the stream from a higher surface.  An interpolation artifact of some kind, not sure if it is mine
+or bedmap2. Might go away with better resolution, but might also need to modify the topgraphy / thickness 
+so that the velocity and geoemtry data agree in the position of the stream. 
+
+
+\begin{center}
+\includegraphics[width=.75\textwidth]{Antarctica2013-all-control.gfx/AMR0006}
+\end{center}
+
+1 km resolution regions needs to be extended : reduce amr.max\_vel\_dx 
+
+
+\bibliographystyle{unsrt}
+\bibliography{Antarctica2013}
+\end{document}
