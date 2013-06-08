@@ -1,0 +1,104 @@
+#sample input file for forward problem
+main.problem = control
+main.poutBaseName = /local/ggslc/pout
+
+#input data
+main.inputMethod = LevelData
+inputLevelData.geometryFile = ../antarctica-geometry-1km.2d.hdf5
+inputLevelData.thicknessName = thk
+inputLevelData.topographyName = topg
+
+inputLevelData.inputFile = ../antarctica-ctrldata-1km.2d.hdf5
+inputLevelData.frictionName = btrc
+inputLevelData.xvelName = umod
+inputLevelData.velcoefName = umodc
+
+temperature.type = LevelData
+inputLevelData.temperatureFile = ../antarctica-temperature-4km.2d.hdf5
+inputLevelData.temperatureName = temp000000
+
+
+#bulk constitutive relation and parameters
+main.constitutiveRelation = L1L2
+main.rateFactor = arrheniusRate
+ArrheniusRate.epsSqr0 = 1.0e-12
+
+main.rateFactor = patersonRate
+patersonRate.epsSqr0 = 1.0e-12
+
+
+#basal friction relation parameters
+main.basalFrictionRelation = powerLaw
+BasalFrictionPowerLaw.m = 1.0
+
+constants.ice_density=918
+
+#JFNK parameters
+JFNKSolver.vtopSafety = 0.95
+JFNKSolver.minPicardIterations = 3
+JFNKSolver.maxIter = 20
+JFNKSolver.absTol = 1.0
+JFNKSolver.relTol = 1.0e-4
+JFNKSolver.solverType = 0 #Relax solver
+JFNKSolver.RelaxRelTol = 1.0e-3
+JFNKSolver.RelaxHang = 0.25
+JFNKSolver.maxRelaxIter = 20
+JFNKSolver.normType = 2
+JFNKSolver.verbosity = 5
+JFNKSolver.vtopRelaxTol = 0.005
+JFNKSolver.vtopRelaxMinIter = 4
+JFNKSolver.numMGSmooth = 8
+JFNKSolver.numMGIter = 1
+JFNKSolver.h = 0.025
+JFNKSolver.switchRate = 5.0
+JFNKSolver.minStepFactor = 0.25
+#JFNKSolver.writeResiduals = true
+
+#control problem parameters
+control.velMisfitCoefficient = 1.0
+control.massImbalanceCoefficient = 0.0e+2
+
+control.gradCsqRegularization = 1.0e+4
+control.gradMuCoefsqRegularization = 1.0e+8
+control.X0Regularization = 1.0e+4
+control.X1Regularization = 1.0e+4
+
+control.boundMethod = Projection
+control.upperX0 = 10.0
+control.lowerX0 = 10.0
+control.upperX1 = 0.7
+control.lowerX1 = -3.0
+
+
+#control.writeInnerSteps = true
+control.outerStepFileNameBase = @NAME-outer.
+control.innerStepFileNameBase = @NAME-inner.
+control.CGsecantStepMaxGrow = 2.0
+
+control.initialMu = 4.0e+6
+control.CGmaxIter = 32
+control.CGtol = 1.0e-6
+control.CGsecantParameter = 1.0e-8
+control.CGsecantMaxIter = 20
+control.CGsecantTol = 1.0e-1
+
+#domain details
+geometry.domain_size = 6144.0e+3 6144.0e+3 1.0e+3
+geometry.num_cells = 6144 6144 10 #1 km base res (geometry data resolution)
+geometry.num_cells = 3072 3072 10 #2 km base res
+geometry.num_cells = 1536 1536 10 #4 km base res (temperature data resolution)
+geometry.num_cells = 768 768 10 #8 km base res
+geometry.num_cells = 384 384 10 #16 km base res
+
+geometry.sigma = 0.0 0.1663 0.3179 0.4547 0.5768 0.6842 0.7768 0.8547 0.9179 0.9663 1.0000
+geometry.is_periodic = 0 0 0
+
+amr.max_box_size = 64
+amr.max_level = @MAXLEV
+amr.max_level_floating = 2
+amr.refinement_ratios = 2 2 2 2 2 2 
+amr.block_factor = 16          # block factor used in grid generation
+amr.fill_ratio = 0.8          # how efficient are the grids
+amr.nesting_radius = 1        # proper nesting radius required
+amr.tags_grow = 1            # amount to buffer tags
+amr.max_vel_dx = 3.0e+5
