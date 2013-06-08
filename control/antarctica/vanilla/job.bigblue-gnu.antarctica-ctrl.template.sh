@@ -11,7 +11,7 @@
 export JOBNO="`echo $PBS_JOBID | sed s/.master.ic.cluster//`"
 
 #create job director
-export BASEDIR=/gpfs/cluster/geog/ggslc/Antarctica2013/Antarctica/control-vanilla/
+export BASEDIR=@PWD
 export DIR=$BASEDIR/@MAXLEVlev
 mkdir -p $DIR
 cd $DIR
@@ -21,17 +21,6 @@ INFILE=$BASECFG.$JOBNO
 echo "INFILE = $INFILE"
 cp $BASEDIR/scripts/$BASECFG $INFILE
 
-#ensure that the job exits on checkpoint
-#echo "amr.check_exit = true" >> $INFILE
-
-
-#work out what the latest checkpoint file is (if it exists)
-if test -n "$(find . -maxdepth 1 -name 'chk*' -print -quit)"
-    then
-    LCHK=`ls -th chk* | head -n 1`
-    echo "" >> $INFILE #ensure a line break
-    echo "amr.restart_file=$LCHK" >> $INFILE
-fi
 export MYEXPATH="/gpfs/cluster/geog/ggslc/BISICLES/BISICLES/code/controlproblem"
 export MYEXEX="control2d.Linux.64.mpiCC.gfortran.DEBUG.OPT.MPI.ex"
 export MYEX=$MYEXPATH/$MYEXEX
@@ -40,8 +29,6 @@ echo "CMD = $CMD"
 #
 echo "PBS_NODEFILE = $PBS_NODEFILE"
 nodelist=`cat $PBS_NODEFILE`
-
-
 
 #
 echo "JOBNO = $JOBNO" 
@@ -85,5 +72,10 @@ then
     done
     zip $JOBNO.zip time.table.*
 else
-    exit 1
+    exit 
+    for iii in `cat $PBS_NODEFILE | uniq`;do 
+	ssh $iii "zip $MYDIR/$JOBNO-aborted.zip /local/ggslc/pout.* && rm /local/ggslc/pout.*" 
+    done
+
+
 fi

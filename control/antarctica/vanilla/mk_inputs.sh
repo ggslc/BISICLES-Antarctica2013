@@ -28,10 +28,9 @@ for MAXLEV in 2 3 4; do
 
     for CONTROL in vanilla ; do
 	NAME=$EXPT"-"$MAXLEV"lev"
-	SUBS="-e s/@EXPT/$EXPT/ -e s/@MAXLEV/$MAXLEV/ -e s/@NAME/$NAME/"
-
+	#PWD=`pwd`
+	SUBS="-e s/@EXPT/$EXPT/ -e s/@MAXLEV/$MAXLEV/ -e s/@NAME/$NAME/ -e s:@PWD:$PWD: "
 	sed $SUBS inputs.$EXPT.template > scripts/inputs.$NAME
-
 	sed $SUBS -e s/@NODES/$NODES/ -e s/@HOURS/$HOURS/ job.bigblue-gnu.$EXPT.template.sh > scripts/job.bigblue-gnu.$NAME.sh
 	sed $SUBS -e s/@NODES/$NODES/ -e s/@HOURS/$HOURS/ job.bigblue-intel.$EXPT.template.sh > scripts/job.bigblue-intel.$NAME.sh
     done

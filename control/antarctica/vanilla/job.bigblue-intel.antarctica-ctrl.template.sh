@@ -11,7 +11,7 @@
 export JOBNO="`echo $PBS_JOBID | sed s/.master.ic.cluster//`"
 
 #create job director
-export BASEDIR=/gpfs/cluster/geog/ggslc/Antarctica2013/Antarctica/control-vanilla/
+export BASEDIR=@PWD
 export DIR=$BASEDIR/@MAXLEVlev
 mkdir -p $DIR
 cd $DIR
