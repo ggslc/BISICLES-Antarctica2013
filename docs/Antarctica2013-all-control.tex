@@ -117,16 +117,16 @@ For now, I only keep the modulus of velocity.
 Temperature data is the same as we used Antarctica2012. It is taken from Pattyn (2010), and
 is stored in the ALBMAP grid in the file Rupert provided:
 \begin{verbatim}
-Antarctica2013/albmap_data/ALBMAP_i2s_4BISICLES.nc
+BISICLES-Antarctica2013/preprocess/downloadeddata/ALBMAP_i2s_4BISICLES.nc
 \end{verbatim}
 We need to place this on a grid that is compatible with the 1~km bedmap2 grid, ie a 
 grid where \\ $\Delta x \in \left \{ \ldots, \frac{1}{2}, 1, 2, 4,\ldots \right \}$. I chose 
 $\Delta x 4$~km to save memory. The program
 albtobed.f90 carries this out and produces the file
 \begin{verbatim}
-Antarctica2013/albmap_data/Antarctica-temperature-4km.nc
+preprocess/basedata/Antarctica-temperature-4km.nc
 \end{verbatim}
-There is some preprocessing in this program too, the temperature is first
+There is some preprocessing in this program, the temperature is first
 grown into the sea (subroutine growtemp) then modified such that it cannot increase
 by more than 5 K between layers, then smoothed (subroutine sanetemp)
 
@@ -134,18 +134,19 @@ by more than 5 K between layers, then smoothed (subroutine sanetemp)
 
 The same program, albtobed.f90, writes a 1 km resolution sector map 
 \begin{verbatim}
-Antarctica2013/albmap_data/Antarctica_sectors-1km.nc
+preprocess/basedata/Antarctica_sectors-1km.nc
 \end{verbatim}
 
 \section{\label{sec::preprocessing}Preprocessing}
 
 The majority of the preprocessing takes place in
 \begin{verbatim}
-Antarctica2013/prep_control/prepcontrol.f90
+prepprocess/prepcontrol.f90
 \end{verbatim}
-The script
+The commands
 \begin{verbatim}
-Antarctica2013/prep_control/prep_antarctica.sh
+> cd preprocess 
+> make antarctica-prep #builds data for whole antarctica, subsections available 
 \end{verbatim}
 builds and runs this program, and converts its netcdf output into the hdf5 format that 
 BISICLES can load.
@@ -471,6 +472,10 @@ so that the velocity and geoemtry data agree in the position of the stream.
 
 1 km resolution regions needs to be extended : reduce amr.max\_vel\_dx 
 
+\subsection{Test run 002}
+
+Test run 001 was run on Jun 6 2013, with finest resolutions of  1 km.
+Preprocessing consisted of \ref{sec::rtt}, \ref{sec::fts}, \ref{sec::cco}, \ref{sec::rri}
 
 \bibliographystyle{unsrt}
 \bibliography{Antarctica2013}

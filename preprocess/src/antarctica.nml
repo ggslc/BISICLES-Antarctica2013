@@ -1,13 +1,13 @@
 !input files
 &files
- ingeofile='bedmap2-1km.nc'
- invelfile='Antarctica_ice_velocity-1km.nc'
- insecfile='Antarctica_sectors-1km.nc'
- intempfile='Antarctica-temperature-4km.nc'
- outgeofile='antarcticabm2-geometry-1km.nc'
- outctrlfile='antarcticabm2-ctrldata-1km.nc'
- outsecfile='anatrcticabm2-sectors-1km.nc'
- outtempfile='antarcticabm2-temperature-4km.nc'
+ ingeofile='basedata/Antarctica-bedmap2-1km.nc'
+ invelfile='basedata/Antarctica-velocity-1km.nc'
+ insecfile='basedata/Antarctica-sectors-1km.nc'
+ intempfile='basedata/Antarctica-temperature-4km.nc'
+ outgeofile='antarctica-geometry-1km.nc'
+ outctrlfile='antarctica-ctrldata-1km.nc'
+ outsecfile='antarctica-sectors-1km.nc'
+ outtempfile='antarctica-temperature-4km.nc'
 /
 
 &dims

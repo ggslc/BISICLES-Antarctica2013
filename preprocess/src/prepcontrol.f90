@@ -164,22 +164,33 @@ subroutine computebtrc(topg, thk, umod, btrc, dx)
   real(kind=8), intent(in) :: dx
   real(kind=8), dimension(1:nx,1:ny), intent(in) :: thk, topg, umod
   real(kind=8), dimension(1:nx,1:ny), intent(inout) :: btrc
-  real(kind=8), dimension(1:nx,1:ny) :: usrf
+  real(kind=8), dimension(1:nx,1:ny) :: usrf,usrfs
 
   integer :: i,j
-  real(kind=8) :: dsx,dsy
+  real(kind=8) :: dsx,dsy,dssx,dssy,ds
  
   usrf = max(topg + thk, (1.0d0-rhoi/rhoo)*thk)
+  usrfs = usrf
   !smooth usrf before numerical differentiation
-  call smooth(usrf,sscale,dx,nx,ny,20)
-  
+  call smooth(usrfs,sscale,dx,nx,ny,20)
+  call smooth(usrf,0.25*sscale,dx,nx,ny,20)
   do j = 2,ny -1
      do i = 2,nx-1   
-        dsx = 0.5*(usrf(i+1,j) - usrf(i-1,j))/dx
-        dsy = 0.5*(usrf(i,j+1) - usrf(i,j-1))/dx
-        btrc(i,j) = dsqrt(dsx**2 + dsy**2 + 1.0d-6) * (thk(i,j)+1.0d0) * rhoi * gravity / (umod(i,j) + 1.0d-6)
+        dssx = 0.5*(usrfs(i+1,j) - usrfs(i-1,j))
+        dssy = 0.5*(usrfs(i,j+1) - usrfs(i,j-1))
+        ds = dsqrt(dssx**2 + dssy**2)
+        dsx = 0.5*(usrf(i+1,j) - usrf(i-1,j))
+        dsy = 0.5*(usrf(i,j+1) - usrf(i,j-1))
+        ds = min(dsqrt(dsx**2 + dsy**2), ds)
+
+
+        ds = ds/dx
+
+        btrc(i,j) = (ds + 1.0d-6) * (thk(i,j)+1.0d0) * rhoi * gravity / (umod(i,j) + 1.0d-6)
      end do
   end do
+
+  btrc = btrc * 0.5
 
   where (btrc.lt.cslippy)
      btrc = cslippy
@@ -399,6 +410,60 @@ contains
     end if
 
   end subroutine removelakevostok
+  
+  subroutine fixrutford(thk,topg,umod,x,y,nx,ny)
+    !rutford ice stream has some thick ice clinging to
+    !steep slopes on its south side. Grow the adjacent ice free
+    !regions to avoid fast cross stream flow
+
+
+    integer, intent(in) :: nx,ny
+    real(kind=8), dimension(1:nx,1:ny), intent(inout) :: thk,topg,umod
+    real(kind=8), dimension(1:nx), intent(in) :: x
+    real(kind=8), dimension(1:ny), intent(in) :: y
+    real(kind=8), dimension(:,:), allocatable :: tthk
+
+    integer :: i,j,ilo,jlo,ihi,jhi,ncells,iter
+    real(kind=8) :: dx,r, dtx,dty,g,s
+
+    dx = x(2) - x(1)
+    r = (1.0d0 - rhoi/rhoo)
+
+     call computebox(ncells,ilo,ihi,jlo,jhi,-1.312d+6,0.01d+6,-1.222d+6,0.14d+6,x,y,nx,ny)
+     
+     if (ncells.gt.0) then
+        allocate(tthk(ilo:ihi,jlo:jhi))
+
+        do iter = 1,3
+           tthk(ilo:ihi,jlo:jhi) = thk(ilo:ihi,jlo:jhi)
+           
+           do j = jlo,jhi
+              do i = ilo,ihi
+                 if (topg(i,j).lt.1.0d+3) then
+                    g = ( topg(i+1,j) - topg(i-1,j))**2 + ( topg(i,j+1) - topg(i,j-1))**2
+                    g = 0.5*sqrt(g)/dx
+                    s = max(topg(i,j) + thk(i,j), r*thk(i,j))
+                    if ((g.gt.0.1).and.(s.gt.r*thk(i,j))) then
+                       s = min(s, topg(i+1,j) + thk(i+1,j))
+                       s = min(s, topg(i-1,j) + thk(i-1,j))
+                       s = min(s, topg(i,j+1) + thk(i,j+1))
+                       s = min(s, topg(i,j-1) + thk(i,j-1))
+                       tthk(i,j) = s-topg(i,j) 
+                    end if
+                 end if
+              end do
+           end do
+           
+           thk(ilo:ihi,jlo:jhi) = tthk(ilo:ihi,jlo:jhi)
+           
+        end do
+        deallocate(tthk)
+
+     end if
+
+    return
+  end subroutine fixrutford
+
 
   subroutine fixthwaitesshelf(thk,topg,umod,x,y,nx,ny)
     !bedmap2 has thaites shelf free-floating, but
@@ -494,7 +559,7 @@ subroutine prep()
   
   call ncloadone(xt,yt,tmp,ingeofile,"topg",nxin,nyin)
   topg = tmp(ixlo:ixhi, iylo:iyhi)
-
+ 
   call ncloadone(xt,yt,tmp,ingeofile,"usrf",nxin,nyin)
   usrf = tmp(ixlo:ixhi, iylo:iyhi)
 
@@ -508,7 +573,7 @@ subroutine prep()
    
   !try to preserve mask, but limit change in surface
   where ( (mask.gt.0.99) .and. ( abs ( usrf - thk*(1.0d0-rhoi/rhoo)) .le. 30.0))
-     topg = min(topg, -20.0 - rhoo/rhoi*thk)
+    topg = min(topg, -20.0 - rhoi/rhoo*thk)
   end where
 
 
@@ -522,7 +587,8 @@ subroutine prep()
   !at its tip.
   call fixthwaitesshelf(thk,topg,umod,x,y,nx,ny)
 
-  
+  !try to avoid cross-stream flow in rutford
+  call fixrutford(thk,topg,umod,x,y,nx,ny)
 
   call ncloadone(xt,yt,tmp,insecfile,"smask",nxin,nyin)
   sec = tmp(ixlo:ixhi, iylo:iyhi)
