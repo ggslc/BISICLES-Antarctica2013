@@ -65,7 +65,7 @@ control.X1Regularization = 1.0e+4
 
 control.boundMethod = Projection
 control.upperX0 = 10.0
-control.lowerX0 = 10.0
+control.lowerX0 = -10.0
 control.upperX1 = 0.7
 control.lowerX1 = -3.0
 
