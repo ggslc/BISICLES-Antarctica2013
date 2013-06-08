@@ -58,7 +58,7 @@ JFNKSolver.minStepFactor = 0.25
 control.velMisfitCoefficient = 1.0
 control.massImbalanceCoefficient = 0.0e+2
 
-control.gradCsqRegularization = 1.0e+4
+control.gradCsqRegularization = 1.0e-4
 control.gradMuCoefsqRegularization = 1.0e+8
 control.X0Regularization = 1.0e+4
 control.X1Regularization = 1.0e+4
