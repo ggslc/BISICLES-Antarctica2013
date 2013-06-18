@@ -1,0 +1,21 @@
+!input files
+
+&rignotveldata	
+ infile='downloadeddata/Antarctica_ice_velocity.nc'
+ outfile='basedata/Antarctica-velocity-1km.nc'
+/
+
+&albmapdata	
+ intempfile='downloadeddata/ALBMAP_i2s_4BISICLES.nc'
+ outtempfile='basedata/Antarctica-temperature-4km.nc'
+ insecfile='downloadeddata/sectormask_highres_v3.nc'
+ outsecfile='basedata/Antarctica-sectors-1km.nc'
+/
+
+&bedmap2data
+ inthkfile='downloadeddata/bedmap2_bin/bedmap2_thickness.flt'
+ inusrffile='downloadeddata/bedmap2_bin/bedmap2_surface.flt'	
+ intopgfile='downloadeddata/bedmap2_bin/bedmap2_bed.flt'
+ inmaskfile='downloadeddata/bedmap2_bin/bedmap2_icemask_grounded_and_shelves.flt'
+ outfile='basedata/Antarctica-bedmap2-1km.nc'
+/
