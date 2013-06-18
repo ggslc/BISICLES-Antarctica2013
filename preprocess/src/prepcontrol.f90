@@ -190,7 +190,7 @@ subroutine computebtrc(topg, thk, umod, btrc, dx)
      end do
   end do
 
-  btrc = btrc * 0.5
+  !btrc = btrc * 0.5
 
   where (btrc.lt.cslippy)
      btrc = cslippy
@@ -605,10 +605,10 @@ subroutine prep()
      end where
 
      !remove ice shelves in quiescent regions
-     r = (1.0d0 - 918.0d0/1028.d0)
-     where ( (sec .eq. qsectors(i)) .and. ( (thk*r).gt.(thk+topg)))
-      thk = 0.0d0
-     end where
+     !r = (1.0d0 - 918.0d0/1028.d0)
+     !where ( (sec .eq. qsectors(i)) .and. ( (thk*r).gt.(thk+topg)))
+     ! thk = 0.0d0
+     !end where
   end do
 
   !remove any ice that isn't actually part of the AIS

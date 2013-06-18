@@ -157,7 +157,7 @@ program rignot
      yr(i) = yr(i-1) + 900.0d0
   end do
 
-
+  write(*,*) 'reading data'
   !load the x- and y- velocity components, and re-order in y
   call ncloadonenoxy(umodr,infile,"vx",ewnr,nsnr)
   call ncloadonenoxy(tmpr,infile,"vy",ewnr,nsnr)
@@ -166,10 +166,16 @@ program rignot
      umodr(:,j) = tmpr(:,nsnr+1-j)
   end do
 
+  write(*,*) 'interpolating'
   !interpolate
   umod = 0.0d0
   call injectposdef(umodr,xr,yr,ewnr,nsnr,umod,x,y,ewn,nsn)
-  call ncsaveone(x,y,umod,ewn,nsn,outfile,"umod")
+  
+
+  write(*,*) 'saving'
+
+
+call ncsaveone(x,y,umod,ewn,nsn,outfile,"umod")
 
 
   !load the error estimate, and re-order in y

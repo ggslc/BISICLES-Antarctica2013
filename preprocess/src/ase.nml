@@ -11,10 +11,10 @@
 /
 
 &dims
- ixlo=1301
- iylo=2269
- nx=768
- ny=896
+ ixlo=1241
+ iylo=2169
+ nx=896
+ ny=1024
  nsigma=10
 /
 
