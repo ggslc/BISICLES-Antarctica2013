@@ -147,16 +147,16 @@ program subsetbm2
 
   call savesubset(x,y,topg,thk,usrf,mask,n,n,1,n,1,n,outfile)
 
-  ns = 768
-  do i = 1,n/ns
-     do j = 1,n/ns
-        write (file,'("bedmap2-1km-E",i1,"N",i1".nc")') i,j
-        ilo = (i-1)*ns+1
-        ihi = ilo + ns 
-        jlo = (j-1)*ns+1
-        jhi = jlo + ns 
-        call savesubset(x,y,topg,thk,usrf,mask,n,n,ilo,ihi,jlo,jhi,file)
-     end do
-  end do
+ ! ns = 768
+ ! do i = 1,n/ns
+ !    do j = 1,n/ns
+ !       write (file,'("bedmap2-1km-E",i1,"N",i1".nc")') i,j
+ !       ilo = (i-1)*ns+1
+ !       ihi = ilo + ns 
+ !       jlo = (j-1)*ns+1
+ !       jhi = jlo + ns 
+ !       call savesubset(x,y,topg,thk,usrf,mask,n,n,ilo,ihi,jlo,jhi,file)
+ !    end do
+ ! end do
 
 end program subsetbm2
