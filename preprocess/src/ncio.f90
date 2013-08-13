@@ -190,4 +190,22 @@ contains
     return
   end subroutine ncloadonenoxy
 
+  subroutine ncdump(a,file,field,ewn,nsn)
+    integer ewn,nsn
+
+    character(len=*),intent(in) :: file, field
+    real(kind=4), dimension(1:ewn,1:nsn) :: a
+    integer nc_id, var_id, cell_dim_id(2), ic
+
+    call nccheck( nf90_create(file,  NF90_CLOBBER, nc_id) )
+    call nccheck( nf90_def_dim(nc_id, "i", ewn , cell_dim_id(1)) )
+    call nccheck( nf90_def_dim(nc_id, "j", nsn , cell_dim_id(2)) )
+    call nccheck( nf90_def_var(nc_id, field, nf90_real8, cell_dim_id, var_id) )
+    call nccheck( nf90_enddef(nc_id) )
+    
+    call nccheck( nf90_put_var(nc_id, var_id , a ) )
+    call nccheck( nf90_close(nc_id) )
+    return
+  end subroutine ncdump
+
 end module ncio

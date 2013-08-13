@@ -26,14 +26,14 @@ subroutine coarsen(nf,xf,yf,nc,xc,yc,af,ac,ncomp)
  
 end subroutine coarsen
 
-subroutine savesubset(x,y,topg,thk,usrf,mask,nx,ny,ixlo,ixhi,iylo,iyhi,file)
+subroutine savesubset(x,y,topg,thk,usrf,umod,umodc,mask,nx,ny,ixlo,ixhi,iylo,iyhi,file)
   use ncio
   implicit none
   integer, intent(in) :: ixlo,ixhi,iylo,iyhi,nx,ny
   
   real (kind=8), dimension(1:nx), intent(in) :: x
   real (kind=8), dimension(1:ny), intent(in) :: y
-  real (kind=8), dimension(1:nx,1:ny), intent(in) :: topg,thk,usrf,mask
+  real (kind=8), dimension(1:nx,1:ny), intent(in) :: topg,thk,usrf,umod,umodc,mask
   character(len=*), intent(in) :: file
 
 
@@ -52,6 +52,13 @@ subroutine savesubset(x,y,topg,thk,usrf,mask,nx,ny,ixlo,ixhi,iylo,iyhi,file)
   a = usrf(ixlo:ixhi,iylo:iyhi) 
   call ncaddone(xs,ys,a,ixhi-ixlo+1,iyhi-iylo+1,file,"usrf")
 
+  a = umod(ixlo:ixhi,iylo:iyhi) 
+  call ncaddone(xs,ys,a,ixhi-ixlo+1,iyhi-iylo+1,file,"umod")
+
+  a = umodc(ixlo:ixhi,iylo:iyhi) 
+  call ncaddone(xs,ys,a,ixhi-ixlo+1,iyhi-iylo+1,file,"umodc")
+
+
   a = mask(ixlo:ixhi,iylo:iyhi) 
   call ncaddone(xs,ys,a,ixhi-ixlo+1,iyhi-iylo+1,file,"mask")
 
@@ -64,8 +71,8 @@ program subsetbm2
    implicit none
 
    character(len=512) :: exename, nmlfile
-   character(len=512) :: inthkfile,inusrffile,intopgfile,inmaskfile,outfile
-  namelist /bedmap2data/ inthkfile,inusrffile,intopgfile,inmaskfile,outfile
+   character(len=512) :: inthkfile,inusrffile,intopgfile,inmaskfile,invelfile,outfile
+   namelist /bedmap2data/ inthkfile,inusrffile,intopgfile,invelfile,inmaskfile,outfile
 
 
    real (kind=8), parameter :: rhoi = 918.0d0, rhoo = 1028.0d0, grav = 9.81d0, eps = 1.0e-3
@@ -73,8 +80,15 @@ program subsetbm2
        n = 6144, ewmin= 263 ,nsmin = 263 ,ewmax=ewmin+n-1,nsmax=nsmin+n-1
   real(kind=4), dimension(1:ewn,1:nsn) :: sp
 
+  ! velocity data is on a smaller domain
+  integer, parameter :: ewnvel = 5602, nsnvel = 5602,  &
+       ewvelmin = 534, nsvelmin = 534, ewvelmax=ewvelmin+ewnvel-1, nsvelmax=nsvelmin+nsnvel-1  
+  real(kind=4), dimension(1:ewnvel,1:nsnvel) :: spv 
+
+  real(kind=4), dimension(1:1000,1:1000) :: t
+
   !data on 1 km grid
-  real(kind=8), dimension(1:n,1:n) :: usrf,topg,thk,mask
+  real(kind=8), dimension(1:n,1:n) :: usrf,topg,thk,mask,umod,umodc
   real(kind=8), dimension(1:n) :: x
   real(kind=8), dimension(1:n) :: y
 
@@ -145,18 +159,25 @@ program subsetbm2
      usrf = 0.0
   end where
 
-  call savesubset(x,y,topg,thk,usrf,mask,n,n,1,n,1,n,outfile)
-
-  ns = 768
-  do i = 1,n/ns
-     do j = 1,n/ns
-        write (file,'("bedmap2-1km-E",i1,"N",i1".nc")') i,j
-        ilo = (i-1)*ns+1
-        ihi = ilo + ns 
-        jlo = (j-1)*ns+1
-        jhi = jlo + ns 
-        call savesubset(x,y,topg,thk,usrf,mask,n,n,ilo,ihi,jlo,jhi,file)
-     end do
+  sp = 0.0e0
+  umodc = 0.0
+  open(unit,file=invelfile, ACCESS='STREAM', FORM='UNFORMATTED')
+  read(unit) spv
+  sp(ewvelmin:ewvelmax,nsvelmin:nsvelmax) = spv
+  close(unit)
+  do i = 0,n-1
+     umod(:,n-i) = sp(ewmin:ewmax,i+nsmin)
   end do
+  where (umod .gt. 0.0d0)
+     umodc = 1.0
+  elsewhere
+     umodc = 0.0
+     umod = 0.0
+  end where
+  
+
+  call savesubset(x,y,topg,thk,usrf,umod,umodc,mask,n,n,1,n,1,n,outfile)
+
+
 
 end program subsetbm2

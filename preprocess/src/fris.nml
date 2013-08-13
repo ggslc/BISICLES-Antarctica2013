@@ -1,7 +1,7 @@
 !input files
 &files
  ingeofile='basedata/Antarctica-bedmap2-1km.nc'
- invelfile='basedata/Antarctica-velocity-1km.nc'
+ invelfile='basedata/Antarctica-bedmap2-1km.nc'
  insecfile='basedata/Antarctica-sectors-1km.nc'
  intempfile='basedata/Antarctica-temperature-4km.nc'
  outgeofile='fris-geometry-1km.nc'
