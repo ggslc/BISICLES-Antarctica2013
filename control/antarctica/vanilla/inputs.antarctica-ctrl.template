@@ -1,6 +1,6 @@
 #sample input file for forward problem
 main.problem = control
-main.poutBaseName = /local/ggslc/pout
+#main.poutBaseName = /local/ggslc/pout
 
 #input data
 main.inputMethod = LevelData
@@ -94,7 +94,7 @@ geometry.sigma = 0.0 0.1663 0.3179 0.4547 0.5768 0.6842 0.7768 0.8547 0.9179 0.9
 geometry.is_periodic = 0 0 0
 
 amr.max_box_size = 64
-amr.max_level = @MAXLEV
+amr.max_level = @LEV
 amr.max_level_floating = 2
 amr.refinement_ratios = 2 2 2 2 2 2 
 amr.block_factor = 16          # block factor used in grid generation
