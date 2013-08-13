@@ -173,15 +173,15 @@ subroutine computebtrc(topg, thk, umod, btrc, dx)
   usrfs = usrf
   !smooth usrf before numerical differentiation
   call smooth(usrfs,sscale,dx,nx,ny,20)
-  call smooth(usrf,0.25*sscale,dx,nx,ny,20)
+  !call smooth(usrf,0.25*sscale,dx,nx,ny,20)
   do j = 2,ny -1
      do i = 2,nx-1   
         dssx = 0.5*(usrfs(i+1,j) - usrfs(i-1,j))
         dssy = 0.5*(usrfs(i,j+1) - usrfs(i,j-1))
         ds = dsqrt(dssx**2 + dssy**2)
-        dsx = 0.5*(usrf(i+1,j) - usrf(i-1,j))
-        dsy = 0.5*(usrf(i,j+1) - usrf(i,j-1))
-        ds = min(dsqrt(dsx**2 + dsy**2), ds)
+        !dsx = 0.5*(usrf(i+1,j) - usrf(i-1,j))
+        !dsy = 0.5*(usrf(i,j+1) - usrf(i,j-1))
+        !ds = min(dsqrt(dsx**2 + dsy**2), ds)
 
 
         ds = ds/dx

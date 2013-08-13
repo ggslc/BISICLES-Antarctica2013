@@ -1,0 +1,41 @@
+!input files
+&files
+ ingeofile='basedata/Antarctica-bedmap2-1km.nc'
+ invelfile='basedata/Antarctica-velocity-1km.nc'
+ insecfile='basedata/Antarctica-sectors-1km.nc'
+ intempfile='basedata/Antarctica-temperature-4km.nc'
+ outgeofile='amery-geometry-1km.nc'
+ outctrlfile='amery-ctrldata-1km.nc'
+ outsecfile='amery-sectors-1km.nc'
+ outtempfile='amery-temperature-4km.nc'
+/
+
+&dims
+ ixlo=3857
+ iylo=2801
+ nx=1536
+ ny=1536
+ nsigma=10
+/
+
+!only a few sectors should be present
+!in the selected area, make them all
+!quiescent apart from the ASE (sector 2)
+
+&quiescent
+qsectors(1) = 1
+qsectors(2) = 3
+qsectors(3) = 3
+qsectors(4) = 4
+qsectors(5) = 5
+qsectors(6) = 6
+qsectors(7) = 7
+qsectors(8) = 8
+qsectors(9) = 9
+qsectors(11) = 11
+qsectors(12) = 12
+qsectors(13) = 13
+qsectors(14) = 14
+
+
+/

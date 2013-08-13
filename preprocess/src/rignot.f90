@@ -162,7 +162,7 @@ program rignot
   call ncloadonenoxy(umodr,infile,"vx",ewnr,nsnr)
   call ncloadonenoxy(tmpr,infile,"vy",ewnr,nsnr)
   tmpr = sqrt(umodr*umodr + tmpr*tmpr)
-  do j = 1,nsn
+  do j = 1,nsnr
      umodr(:,j) = tmpr(:,nsnr+1-j)
   end do
 
