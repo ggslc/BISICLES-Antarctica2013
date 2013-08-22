@@ -514,7 +514,68 @@ contains
 
   end subroutine fixthwaitesshelf
 
+
+  
+
 end module bmmods
+
+
+
+  subroutine insert_joughin(x,y,umod,umodc,nx,ny)
+    use ncio
+    implicit none
+    integer, intent(in) :: nx,ny
+    real(kind=8),intent(in), dimension(1:nx) :: x
+    real(kind=8),intent(in), dimension(1:ny) :: y
+    real(kind=8),intent(inout), dimension(1:nx, 1:ny) :: umod,umodc
+    
+    !dimensions of the two Joughin data sets (ux, uy)
+    integer, parameter :: nxux = 817, nyux = 1004
+    integer, parameter :: nxuy = 800, nyuy = 1000
+
+    ! offset from Joughin data
+    integer ixloux,iyloux,ixlouy,iylouy,ixlo,iylo,ixhi,iyhi,ix,iy 
+
+    real(kind=8), dimension(1:nxux) :: xux
+    real(kind=8), dimension(1:nyux) :: yux
+    real(kind=8), dimension(1:nxuy) :: xuy
+    real(kind=8), dimension(1:nyuy) :: yuy
+    real(kind=8), dimension(1:nxux, 1:nyux) :: ux
+    real(kind=8), dimension(1:nxuy, 1:nyuy) :: uy
+    real(kind=8) :: dx
+    call ncloadone(xux,yux,ux,"basedata/pigth_velx_joughin.nc","z",nxux,nyux)
+    call ncloadone(xuy,yuy,uy,"basedata/pigth_vely_joughin.nc","z",nxuy,nyuy)
+
+    dx = 1.0d+3
+
+    ixloux = int( (xux(1) - x(1))/dx)
+    iyloux = int( (yux(1) - y(1))/dx)
+    ixlouy = int( (xuy(1) - x(1))/dx)
+    iylouy = int( (yuy(1) - y(1))/dx)
+
+    write(*,*) ixloux, iyloux,ixlouy,iylouy
+    
+    ixlo = max(ixloux,ixlouy)
+    iylo = max(iyloux,iylouy)
+    ixhi = min(nx,min(ixlo + nxux-1, ixlo + nxuy-1))
+    iyhi = min(ny,min(iylo + nyux-1, iylo + nyuy-1))
+
+    do iy = iylo,iyhi
+       do ix = ixlo,ixhi
+          umod(ix,iy) = dsqrt( & 
+               ux(ix-ixloux,iy-iyloux )**2 +  uy(ix-ixlouy,iy-iylouy )**2)
+
+          !detect NaNs
+          if (.not.( (umod(ix,iy) .gt. 0.0d0))) then
+              umod(ix,iy) = 0.0
+              umodc(ix,iy) = 0.0
+          end if
+
+       end do
+    end do
+
+    return
+  end subroutine insert_joughin
 
 subroutine prep()
      
@@ -629,6 +690,14 @@ subroutine prep()
   !grow the no-confidence region, avoid fitting edge artifacts in umod
   call growmin(umodc,nx,ny,2)
   call ncaddone(x,y,umodc,nx,ny,outctrlfile,"umodc")
+
+  !also construct and a second set of velocity observations by replacin
+  !the Rignot NSIDC velocity dath with the Joughin ASE data
+  call insert_joughin(x,y,umod,umodc,nx,ny)
+
+  call ncaddone(x,y,umod,nx,ny,outctrlfile,"umodj")
+  call ncaddone(x,y,umodc,nx,ny,outctrlfile,"umodjc")
+
 
   call ncsaveone(x,y,thk,nx,ny,outgeofile,"thk")
   call ncaddone(x,y,topg,nx,ny,outgeofile,"topg")

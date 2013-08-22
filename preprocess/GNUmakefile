@@ -47,10 +47,14 @@ BASEDATA=basedata/Antarctica-bedmap2-1km.nc basedata/Antarctica-temperature-4km.
 %-ctrldata-1km.2d.hdf5: %-ctrldata-1km.nc
 	$(NCTOAMR) $< $@ umod umodc btrc
 
+%-ctrldata-j-1km.2d.hdf5: %-ctrldata-1km.nc
+	$(NCTOAMR) $< $@ umodj umodjc btrc
+
+
 %-sectors-1km.2d.hdf5: %-sectors-1km.nc
 	$(NCTOAMR) $< $@ smask
 
-%-prep: %-geometry-1km.2d.hdf5 %-ctrldata-1km.2d.hdf5 %-sectors-1km.2d.hdf5 %-temperature-4km.2d.hdf5 
+%-prep: %-geometry-1km.2d.hdf5 %-ctrldata-1km.2d.hdf5 %-ctrldata-j-1km.2d.hdf5 %-sectors-1km.2d.hdf5 %-temperature-4km.2d.hdf5 
 	ls -l $? > $@
 
 .PHONY: clean 
@@ -60,6 +64,6 @@ clean :
 
 
 #having gone to the trouble of forging the ring, let us not destroy it
-.PRECIOUS: %-geometry-1km.nc %-ctrldata-1km.nc %-temperature-4km.nc %-sectors-1km.nc %-geometry-1km.2d.hdf5 %-ctrldata-1km.2d.hdf5 %-temperature-4km.2d.hdf5 %-sectors-1km.2d.hdf5
+.PRECIOUS: %-geometry-1km.nc %-ctrldata-1km.nc  %-temperature-4km.nc %-sectors-1km.nc %-geometry-1km.2d.hdf5 %-ctrldata-1km.2d.hdf5 %-ctrldata-j-1km.2d.hdf5 %-temperature-4km.2d.hdf5 %-sectors-1km.2d.hdf5
 
 
