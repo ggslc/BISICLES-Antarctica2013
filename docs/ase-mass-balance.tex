@@ -105,7 +105,7 @@ Last Changed Date: 2013-08-19 13:34:08 +0100 (Mon, 19 Aug 2013)
 \includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test0-ctrl-0005.png}
 \includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test0-ctrl-0006.png}
 \end{center}
-\caption{\protect{\label{fig::divuh10}}} flux divergence $\vec{\nabla}. (\vec{u} H)$
+\caption{\protect{\label{fig::divuh10}}} test 0 flux divergence $\vec{\nabla}. (\vec{u} H)$
 after 80 CG iterations with topography evolution every 10 iterations. 
 Around the Pine Island grounding line, we see $\vec{\nabla}. (\vec{u} H) \sim 100~\mbox{m/a}$ has
 beed reduced a great deal, though there is now a thickness step there and a huge (km/a) melt rate
@@ -117,6 +117,117 @@ update the face-centered thickness in LevelSigmaCS. It would also make sense to 
 than simply every 10 iterations, presumably so that at the end of the problem only a few CG iterations are needed 
 between each relaxation.
 
+\newpage
+
+\subsection{Test 1}
+
+Face-centered thickness now updated in LevelSigmaCS.
+
+Allowing thickness to evolve in the ice shelf. On each time-step I compute
+\begin{equation}
+\Delta H = - \Delta t ( \vec{\nabla}. (\vec{u} H) - \vec{\nabla}. (\vec{u} H) _{\rm obs}).
+\end{equation}
+But rather than modify the topography with $\Delta r = -\Delta H$ in the ice sheet only, I compute 
+\begin{equation}
+  \Delta r = \left \{ 
+  \begin{array}{lr} 
+    {\rm max} (-\Delta H,  -(H + \Delta H)  \rho_{\rm i}/\rho_{\rm w} - r) & \mbox{for grounded ice} \\
+    {\rm min} (-\Delta H,  -(H + \Delta H) \rho_{\rm i}/\rho_{\rm w} - r)& \mbox{for floating ice} \\
+    0 & \mbox{elsehwere}
+  \end{array} \right. 
+\end{equation}
+which preserves the mask, and provided the mask is preseved, the surface elevation in the ice sheet.
+
+On every CG restart (every 10 iterations in this case), there is an evolution stage (as before), but now I compute
+a melt-rate $-M_b$ at the start of each new evolution. I attempt to find a smooth $M_b$ based on the flux divergence
+in the ice shelf by solving 
+\begin{equation}
+  M_b - \lambda^2 \nabla ^2 M_b = - \left \{ 
+  \begin{array}{lr} 
+    \vec{\nabla}. (\vec{u} H) & \mbox{for floating ice} \\
+    0 & \mbox{elsehwere}
+  \end{array} \right. 
+\end{equation}
+
+\begin{verbatim}
+URL: https://anag-repo.lbl.gov/svn/BISICLES/public/branches/inverseproblem/code
+Repository Root: https://anag-repo.lbl.gov/svn/BISICLES
+Repository UUID: 4b1697f3-9003-4f1e-b6a8-e72787e6a227
+Revision: 2170
+Node Kind: directory
+Schedule: normal
+Last Changed Author: slcornford
+Last Changed Rev: 2164
+Last Changed Date: 2013-08-20 17:05:02 +0100 (Tue, 20 Aug 2013)
+\end{verbatim}
+
+some output and inputs files stored:
+\begin{verbatim}
+[ggslc@porthos run]$ cp ase-test0-ctrl-2lev-outer.0000?0.2d.hdf5 
+/data/ggslc/BISICLES-Antarctica2013/control/ase/mass-balance/test1/
+[ggslc@porthos run]$ cp inputs.testm 
+/data/ggslc/BISICLES-Antarctica2013/control/ase/mass-balance/test1/
+\end{verbatim}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test1-ctrl-0008.png}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test1-ctrl-0009.png}
+\end{center}
+\caption{\protect{\label{fig::test1a}}} test 1 flux divergence $\vec{\nabla}. (\vec{u} H)$
+after 10 CG iterations. 
+\end{figure}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test1-ctrl-0010.png}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test1-ctrl-0011.png}
+\end{center}
+\caption{\protect{\label{fig::test1b}}} test 1  flux divergence $\vec{\nabla}. (\vec{u} H)$
+after 43 CG iterations. Smoother, much reduced.
+\end{figure}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test1-ctrl-0012.png}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test1-ctrl-0013.png}
+\end{center}
+\caption{\protect{\label{fig::test1c}}} test 1 flux divergence $\vec{\nabla}. (\vec{u} H)$
+after 83 CG iterations. Smoother, much reduced.
+\end{figure}
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.75\textwidth]{ase-mass-balance.gfx/ase-test1-ctrl-0014.png}
+\end{center}
+\caption{\protect{\label{fig::test1c}}} test 1  flux divergence $\vec{\nabla}. (\vec{u} H)$
+after 83 CG iterations. Smoother, much reduced.
+\end{figure}
+
+{\large {\bf Conclusions:}} This all seems to be an improvement. Notably, however, PIG is no longer grounded on a ridge
+(or rather, the ridge has been eroded). Need to try the (slower, earlier) Joughin velocities and consider allowing the
+GL to move or imposing a new GL from (say) Shepherd. Also $M_b$ to be computed on the first evolution and held constant in time.
+
+\subsection{Test 2}
+
+As test 1, but with $M_b$ computed on the first evolution and held constant in time.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test2-ctrl-0001.png}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test2-ctrl-0001.png}
+\end{center}
+\caption{\protect{\label{fig::test1b}}} test 2 flux divergence $\vec{\nabla}. (\vec{u} H)$
+after 10 and 43 CG iterations. $M_b$ computed on the first evolution and held constant in time.
+Slightly different transect from previous figures (VisIt restarted).
+\end{figure}
+
+
+{\large {\bf Conclusions:}} This all seems to be an improvement. Notably, however, PIG is no longer grounded on a ridge
+(or rather, the ridge has been eroded). Need to try the (slower, earlier) Joughin velocities and consider allowing the
+GL to move or imposing a new GL from (say) Shepherd. Also $M_b$ to be computed on the first evolution and only decreased 
+(more melting) in subsequent stages. 
 
 \bibliographystyle{unsrt}
 \bibliography{Antarctica2013}
