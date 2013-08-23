@@ -25,13 +25,13 @@
 
 \section{Mass balance problem}
 
-It is easy enough to find $C$ and $\phi$ in the convecntional control problem such that the
+It is easy enough to find $C$ and $\phi$ in the convectional control problem such that the
 observed and model velocity are well-matched. But when we do so, we find that $\vec{\nabla}. (\vec{u} H)$
 is far too large, and noisy (fig \ref{fig::divuh10}. Around the Pine Island grounding line, we see $\vec{\nabla}. (\vec{u} H) \sim 100~\mbox{m/a}$,
-that is, a huge thickneing rate. Previously, we have attempted to relax the ice sheet after the control problem has done, and in fact had to
-introuduce extra softeness (through a reduced $phi$) around the PIG GL.  
+that is, a huge thickening rate. Previously, we have attempted to relax the ice sheet after the control problem has done, and in fact had to
+introduce extra softness (through a reduced $phi$) around the PIG GL.  
 
-Ideally, we woould like to modify the control problem to minimize both $||~|\vec{u}|_{\rm obs} - |\vec{u}|~||$ 
+Ideally, we would like to modify the control problem to minimize both $||~|\vec{u}|_{\rm obs} - |\vec{u}|~||$ 
 \emph{and} $||\vec{\nabla}. (\vec{u} H)_{\rm obs}) - \vec{\nabla}. (\vec{u} H)  ||$, or some linear combination
 of them. In earlier work, we attempted to do just that, but it became apparent that it is the topography 
 (and ice thickness) that need to be found. TODO : check Morlighem and Perego work on this area, Morloghem 
@@ -49,20 +49,20 @@ after 10 CG iterations. Around the Pine Island grounding line, we see $\vec{\nab
 \section{First thoughts}
 
 Choosing $H$ to minimize  $||\vec{\nabla}. (\vec{u} H)_{\rm obs}) - \vec{\nabla}. (\vec{u} H)  ||$ isn't
-epsecially easy because there is not an obvious norm (but check Schoof 2006) which leads to the
+especially easy because there is not an obvious norm (but check Schoof 2006) which leads to the
 advection equation. Obvious norms, e.g the L2-norm $||\vec{\nabla}. (\vec{u} H)_{\rm obs}) - \vec{\nabla}. (\vec{u} H)  ||^2_2$ lead 
-in essence to diffusions equations. On top of that, the advection equation operator $A$ is not symettric positive definite,
+in essence to diffusion equations. On top of that, the advection equation operator $A$ is not symmetric positive definite,
 so simply using it in the CG gradient (ie attempting to exploit a descent direction $H \leftarrow H - \alpha  \vec{\nabla}. (\vec{u} H)$)
 end up solving something like $ (A + A^T)h = 2 r$ rather than $ A H = r$ -- ie a diffusion equation rather than an advection equation.
 I tried both these out anyway, without decent results.
 
 \section{\label{sec::toporelax} Relaxation of topography}
 
-Last year I tried relaxing the topgraphy by evolving the ice sheet and holding the upper surface and the ice shelf constant. 
-This looked prosmising, but it was a bit slow, and produced annoyoin results. e.g moving the PIG
-GL, and I abandoned it for the time being. However, I saw a talk by Mathieu Morlighem where he had acheive
+Last year I tried relaxing the topography by evolving the ice sheet and holding the upper surface and the ice shelf constant. 
+This looked promising, but it was a bit slow, and produced annoying results. e.g moving the PIG
+GL, and I abandoned it for the time being. However, I saw a talk by Matthieu Morlighem where he had achieve
 good results in this sort of way for Greenland and PIG, so it makes sense to retry the idea. This time around, 
-I have attempted to embed the topgraphy relaxtion in the control problem code (control.cpp) rather than rely on the
+I have attempted to embed the topography relaxation in the control problem code (control.cpp) rather than rely on the
 usual time dependent code (driver.cpp).
 
 The basic idea is
@@ -74,7 +74,7 @@ The basic idea is
 \end{enumerate}
 Note that in step 2 I evolve the ice thickness holding $u(x,y)$ constant throughout
 in time. That reduces the computational cost considerably, as the time dependent problem 
-is domiated by velocity solves.
+is dominated by velocity solves.
 
 \subsection{Test 0}
 
@@ -82,7 +82,7 @@ is domiated by velocity solves.
 I set $n$ = 10 and $\Delta t = 0.01$ and $T=1$. In the ice sheet, I set 
 $\vec{\nabla}. (\vec{u} H)_{\rm obs}) = 0$ - in practice this should $a_{\rm obs} - H'_{\rm obs}$.
 In the ice shelf,  I set $\vec{\nabla}. (\vec{u} H)_{\rm obs}) = \vec{\nabla}. (\vec{u} H)$,
-which has the effect of holding its geoemtry consstant (not ideal, but we don't want $\vec{\nabla}. (\vec{u} H) = 0$, and we don't
+which has the effect of holding its geometry constant (not ideal, but we don't want $\vec{\nabla}. (\vec{u} H) = 0$, and we don't
 know the melt-rate). Also, in order to avoid recomputing the shelf/sheet mask (and hence moving the region 
 in which $\vec{\nabla}. (\vec{u} H)_{\rm obs}) = \vec{\nabla}. (\vec{u} H)$), I don't call LevelSigmaCS::recomputeGeoemtry(), 
 which means that the face-centered thickness doesn't get updated (and should). 
@@ -108,12 +108,12 @@ Last Changed Date: 2013-08-19 13:34:08 +0100 (Mon, 19 Aug 2013)
 \caption{\protect{\label{fig::divuh10}}} test 0 flux divergence $\vec{\nabla}. (\vec{u} H)$
 after 80 CG iterations with topography evolution every 10 iterations. 
 Around the Pine Island grounding line, we see $\vec{\nabla}. (\vec{u} H) \sim 100~\mbox{m/a}$ has
-beed reduced a great deal, though there is now a thickness step there and a huge (km/a) melt rate
+been reduced a great deal, though there is now a thickness step there and a huge (km/a) melt rate
 implied in the ice shelf.
 \end{figure}
 
 {\large {\bf Conclusions:}} The basic idea seems to work, but I need to allow the thickness to evolve in the ice shelf, and
-update the face-centered thickness in LevelSigmaCS. It would also make sense to carry out relaxtions based on the misfit rather
+update the face-centered thickness in LevelSigmaCS. It would also make sense to carry out relaxations based on the misfit rather
 than simply every 10 iterations, presumably so that at the end of the problem only a few CG iterations are needed 
 between each relaxation.
 
@@ -133,10 +133,10 @@ But rather than modify the topography with $\Delta r = -\Delta H$ in the ice she
   \begin{array}{lr} 
     {\rm max} (-\Delta H,  -(H + \Delta H)  \rho_{\rm i}/\rho_{\rm w} - r) & \mbox{for grounded ice} \\
     {\rm min} (-\Delta H,  -(H + \Delta H) \rho_{\rm i}/\rho_{\rm w} - r)& \mbox{for floating ice} \\
-    0 & \mbox{elsehwere}
+    0 & \mbox{elsewhere}
   \end{array} \right. 
 \end{equation}
-which preserves the mask, and provided the mask is preseved, the surface elevation in the ice sheet.
+which preserves the mask, and provided the mask is preserved, the surface elevation in the ice sheet.
 
 On every CG restart (every 10 iterations in this case), there is an evolution stage (as before), but now I compute
 a melt-rate $-M_b$ at the start of each new evolution. I attempt to find a smooth $M_b$ based on the flux divergence
@@ -145,7 +145,7 @@ in the ice shelf by solving
   M_b - \lambda^2 \nabla ^2 M_b = - \left \{ 
   \begin{array}{lr} 
     \vec{\nabla}. (\vec{u} H) & \mbox{for floating ice} \\
-    0 & \mbox{elsehwere}
+    0 & \mbox{elsewhere}
   \end{array} \right. 
 \end{equation}
 
@@ -215,7 +215,7 @@ As test 1, but with $M_b$ computed on the first evolution and held constant in t
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test2-ctrl-0001.png}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test2-ctrl-0000.png}
 \includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test2-ctrl-0001.png}
 \end{center}
 \caption{\protect{\label{fig::test1b}}} test 2 flux divergence $\vec{\nabla}. (\vec{u} H)$
@@ -228,6 +228,40 @@ Slightly different transect from previous figures (VisIt restarted).
 (or rather, the ridge has been eroded). Need to try the (slower, earlier) Joughin velocities and consider allowing the
 GL to move or imposing a new GL from (say) Shepherd. Also $M_b$ to be computed on the first evolution and only decreased 
 (more melting) in subsequent stages. 
+
+\subsection{Test 3}
+
+As test 1, but with $M_b$ computed on the first evolution and thereafter only increased. That is
+$M_b(t) = \mbox{min}(M_b(t = 0), L^{-1} \vec{\nabla}. (\vec{u} H))$, with $L$ the Poisson operator
+$L v = v - \lambda^2 \nabla^2 v$ .
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test3-ctrl-0000.png}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test3-ctrl-0001.png}
+\end{center}
+\caption{\protect{\label{fig::test1b}}} test 3 initial topography and transect.
+Added the lowest bed elevation for grounded ice given the surface elevation 
+$s - s/(1-\rho _{\rm i}/\rho _{\rm w}$ (rmin)
+\end{figure}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test3-ctrl-0002.png}
+\includegraphics[width=0.45\textwidth]{ase-mass-balance.gfx/ase-test3-ctrl-0003.png}
+\end{center}
+\caption{\protect{\label{fig::test1b}}} test 3 CG 90 topography and transect.
+Added the lowest bed elevation for grounded ice given the surface elevation.
+\end{figure}
+
+{\large {\bf Conclusions:} Ice is still rather thick at the GL.}
+
+\subsection{Test 4}
+
+As test 3, but now the grounding line can retreat - which allows the extent of melting to be modified as well
+as the amplitude.
+
+
 
 \bibliographystyle{unsrt}
 \bibliography{Antarctica2013}
