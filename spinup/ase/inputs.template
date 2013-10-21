@@ -1,0 +1,157 @@
+
+main.poutBaseName = @OUTDIR/@NAME-pout
+
+#domain details
+main.domain_size = 896.0e+3 1024.0e+3 1.0e+3
+amr.num_cells = 224 256 10 #4 km base res (temperature data resolution)
+amr.is_periodic = 0 0 0
+amr.sigma = 0.0 0.1663 0.3179 0.4547 0.5768 0.6842 0.7768 0.8547 0.9179 0.9663 1.0000
+
+#bulk constitutive relation and parameters
+main.constitutiveRelation = L1L2	
+main.rateFactor = patersonRate
+patersonRate.epsSqr0 = 1.0e-12
+
+#geometry & basal friction input data
+geometry.problem_type = LevelData
+
+inputLevelData.geometryFile = @SHAREDIR/ase-data-mb-1km.2d.hdf5
+inputLevelData.thicknessName = thck
+inputLevelData.topographyName = topg
+
+geometry.beta_type = LevelData
+
+inputLevelData.frictionFile = @SHAREDIR/ase-data-mb-1km.2d.hdf5
+inputLevelData.frictionName = Cwshelf
+
+muCoefficient.type = LevelData
+inputLevelData.muCoefFile = @SHAREDIR/ase-data-mb-1km.2d.hdf5
+inputLevelData.muCoefName = muCoef
+
+temperature.type = LevelData
+inputLevelData.temperatureFile = @PREPDIR/ase-temperature-4km.2d.hdf5
+inputLevelData.temperatureName = temp000000
+
+#basal friction relation parameters
+main.basalFrictionRelation = powerLaw
+BasalFrictionPowerLaw.m = 1.0
+
+#physical constants
+constants.ice_density=918
+
+#surface fluxes
+#need to get RACMO SMB 
+surfaceFlux.type = constantFlux
+surfaceFlux.flux_value = 0.05
+
+
+
+basalFlux.type = maskedFlux
+basalFlux.grounded.type = constantFlux
+basalFlux.grounded.flux_value = 0.0
+
+basalFlux.floating.type = axbyFlux
+
+basalFlux.floating.a = 1.25 # 
+basalFlux.floating.x.type = LevelData
+basalFlux.floating.x.n = 1
+basalFlux.floating.x.timeStep = 1.0e+10
+basalFlux.floating.x.startTime = 0.0
+basalFlux.floating.x.fileFormat = @SHAREDIR/ase-data-mb-1km.2d.hdf5
+basalFlux.floating.x.name = divuho
+
+basalFlux.floating.b = 0.0
+basalFlux.floating.y.type = constantFlux
+basalFlux.floating.y.flux_value = 0.0
+
+
+#calving model - hold the calving front steady
+CalvingModel.type = FixedFrontCalvingModel
+CalvingModel.min_thickness = 10.0
+#velocity solve type -- 0 = Picard, 1 = JFNK
+amr.velocity_solver_type = 1
+
+#initial guess 
+amr.do_initial_velocity_guess = 1
+amr.do_initial_velocity_solve = 1
+amr.initial_velocity_guess_type = 1 # linear PDE
+amr.initial_velocity_guess_const_mu = 2.9e+6
+amr.initial_velocity_guess_solver_type = 1 #JFNK
+
+
+#JFNK parameters
+JFNKSolver.vtopSafety = 0.95
+JFNKSolver.minPicardIterations = 3
+JFNKSolver.maxIter = 20
+JFNKSolver.absTol = 1.0e+3
+JFNKSolver.relTol = 1.0e-2
+JFNKSolver.solverType = 0 #Relax solver
+JFNKSolver.RelaxRelTol = 2.0e-3
+JFNKSolver.RelaxHang = 0.95
+JFNKSolver.maxRelaxIter = 30
+JFNKSolver.normType = 0
+JFNKSolver.verbosity = 5
+JFNKSolver.vtopRelaxTol = 0.005
+JFNKSolver.vtopRelaxMinIter = 8
+JFNKSolver.numMGSmooth = 8
+JFNKSolver.numMGIter = 1
+JFNKSolver.h = 0.025
+JFNKSolver.switchRate = 2.0
+#JFNKSolver.writeResiduals = true
+#JFNKSolver.muMin = 1.0e+4
+#JFNKSolver.uMaxAbs = 1.0e+6
+
+
+#time stepping
+main.maxTime = 50  # maximum time to run to
+main.maxStep = 100000  # maximum number of steps to runx
+amr.temporal_accuracy = 1
+amr.cfl = 0.25  
+amr.initial_cfl = 0.25  
+amr.max_dt_grow_factor = 1.1 
+amr.time_step_ticks = 1
+
+#plotting options
+amr.plot_interval = 1
+#amr.plot_time_interval = 2.0
+amr.plot_prefix = @OUTDIR/plot.@NAME.
+#amr.write_preSolve_plotfiles = true
+amr.write_solver_rhs = 1
+amr.write_viscous_tensor = true
+amr.write_thickness_sources = true
+#check points
+amr.check_interval = 256
+amr.check_prefix = @OUTDIR/chk.@NAME.
+amr.check_overwrite = 0
+#
+
+#AMR mesh options
+amr.maxLevel = 10 # finest level allowed in simulation
+amr.ref_ratio = 2 2 2 2 2 2 2 2 2 2 2
+amr.regrid_interval = 1  # number of timesteps between regridding
+amr.blockFactor = 8      # block factor used in grid generation
+amr.fill_ratio = 0.85    # how efficient are the grids
+amr.nestingRadius = 1    # proper nesting radius required
+amr.tags_grow = 4        # amount to buffer tags
+amr.tagSubsetBoxesFile = @SHAREDIR/tag_subset.ase
+amr.tagCap = @TAGCAP
+amr.interpolate_zb = 0 #go back to the IBC to regrid geometry
+amr.max_box_size = 32        # largest box length allowed
+
+#AMR tagging
+amr.tag_on_grad_velocity = 0
+
+
+amr.tag_on_grounded_laplacian_velocity = 1
+amr.lap_vel_tagging_val = 150
+amr.lap_vel_tagging_max_basal_friction_coef = 500.0
+
+amr.tag_grounding_line = 1
+amr.grounding_line_tagging_min_vel = 100.0
+amr.grounding_line_tagging_max_basal_friction_coef = 500.0
+
+#misc options
+amr.verbosity = 5
+
+
+
