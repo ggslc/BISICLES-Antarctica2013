@@ -4,10 +4,12 @@
  invelfile='basedata/Antarctica-velocity-1km.nc'
  insecfile='basedata/Antarctica-sectors-1km.nc'
  intempfile='basedata/Antarctica-temperature-4km.nc'
+ inaccafile='basedata/Antarctica-acca-4km.nc'
  outgeofile='amery-geometry-1km.nc'
  outctrlfile='amery-ctrldata-1km.nc'
  outsecfile='amery-sectors-1km.nc'
  outtempfile='amery-temperature-4km.nc'
+ outaccafile='amery-acca-4km.nc'
 /
 
 &dims

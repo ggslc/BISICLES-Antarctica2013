@@ -6,10 +6,14 @@
  outtempfile='basedata/Antarctica-temperature-4km.nc'
  insecfile='downloadeddata/sectormask_highres_v3.nc'
  outsecfile='basedata/Antarctica-sectors-1km.nc'
+ inaccafile='downloadeddata/ALBMAP_i2s_4BISICLES.nc'
+ outaccafile='basedata/Antarctica-acca-4km.nc'
 /
 
 &bedmap2data
  inthkfile='downloadeddata/bedmap2_bin/bedmap2_thickness.flt'
+ inthkcfile='downloadeddata/bedmap2_bin/bedmap2_coverage.flt'
+ inthkufile='downloadeddata/bedmap2_bin/bedmap2_grounded_bed_uncertainty.flt'
  inusrffile='downloadeddata/bedmap2_bin/bedmap2_surface.flt'	
  intopgfile='downloadeddata/bedmap2_bin/bedmap2_bed.flt'
  invelfile='downloadeddata/bedmap2_bin/rignot_velocity_bedmap2_grid.flt'

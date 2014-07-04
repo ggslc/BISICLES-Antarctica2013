@@ -216,8 +216,10 @@ program albtobed
   
   
   character(len=512) :: exename, nmlfile
-  character(len=512) :: intempfile,outtempfile,insecfile,outsecfile
-  namelist /albmapdata/ intempfile,outtempfile,insecfile,outsecfile
+  character(len=512) :: intempfile,outtempfile,insecfile,outsecfile, &
+       inaccafile,outaccafile
+  namelist /albmapdata/ intempfile,outtempfile,insecfile,outsecfile, &
+       inaccafile,outaccafile
   
   integer, parameter :: upn = 10
   character(len=10), dimension(upn) :: tempnames
@@ -321,11 +323,23 @@ program albtobed
   call ncsaven(xcc,ycc,tempcc,ewncc,nsncc,upn,outtempfile,tempnames)
   
   !sector data on ALBMAP 
+  write(*,*) 'sector data'
   call ncloadonenoxy(smasks,insecfile,'sectors',1160,1120)
   tmpa = 0.0
   tmpa(1:1160,1:1120) = smasks
   call inject(tmp,x,y,ewn,nsn,tmpa,xa,ya,ewna,nsna)
   call ncsaveone(x,y,tmp,ewn,nsn,outsecfile,"smask")
 
+  !accumulation data
+  write(*,*) 'accumulation data'
+  call ncloadone(xa,ya,tmpa,inaccafile,'acca',ewna,nsna)
+  where (.not.(tmpa.ge.0.0))
+     !get rid of NaNs
+     tmpa = 0.0
+  end where
+  call inject(tmp,x,y,ewn,nsn,tmpa,xa,ya,ewna,nsna)
+  call coarsen( ewn, x, y, ewnc, xc, yc, tmp, tmpc, 1)
+  call coarsen( ewnc, xc, yc, ewncc, xcc, ycc, tmpc, tmpcc, 1)
+  call ncsaveone(xcc,ycc,tmpcc,ewncc,nsncc,outaccafile,"acca")
 
 end program albtobed

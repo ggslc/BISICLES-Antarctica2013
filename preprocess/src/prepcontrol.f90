@@ -1,5 +1,5 @@
 !prepcontrol.f90
-!Read geoemtry data , speed data, sector data 
+!Read geoemtry data , speed data, sector data, accumulation data 
 !Estimate initial friction corigin
 !corigin = rho * g * h * |grad(s')|/|u'|
 ! s' and u' are modified from |s| and |u| to 
@@ -22,15 +22,15 @@ end module physparam
 
 module globaldata
 
-  character(len=512) :: ingeofile, invelfile, insecfile, intempfile, &
-       outgeofile, outctrlfile, outsecfile, outtempfile
+  character(len=512) :: ingeofile, invelfile, insecfile, intempfile, inaccafile, &
+       outgeofile, outctrlfile, outsecfile, outtempfile, outaccafile
   
   character(len=16) :: buf
   integer :: argc,nsigma,ixlo,iylo,nx,ny,nxin,nyin,nx4,ny4,nxin4,nyin4,ixlo4,iylo4
   integer, dimension(32) :: qsectors
 
-  namelist /files/  ingeofile, invelfile, insecfile, intempfile, & 
-       outgeofile, outctrlfile, outsecfile, outtempfile
+  namelist /files/  ingeofile, invelfile, insecfile, intempfile,inaccafile, & 
+       outgeofile, outctrlfile, outsecfile, outtempfile, outaccafile
   namelist /dims/  ixlo,iylo,nx,ny,nxin,nyin,nsigma
   namelist /quiescent/ qsectors 
 
@@ -194,6 +194,10 @@ subroutine computebtrc(topg, thk, umod, btrc, dx)
 
   where (btrc.lt.cslippy)
      btrc = cslippy
+  end where
+
+  where ((topg.gt.0.0) .and. (btrc.lt.1000))
+     btrc = 1000.0
   end where
 
   return
@@ -512,6 +516,12 @@ contains
        thk(ilo:ihi,jlo:jhi) = 0.0d0
     end if
 
+    call computebox(ncells,ilo,ihi,jlo,jhi,-1.546d+6,-0.502d+6,-1.538d+6,-0.494d+6,x,y,nx,ny)
+    if (ncells.gt.0) then
+       thk(ilo:ihi,jlo:jhi) = 0.0d0
+    end if
+
+
   end subroutine fixthwaitesshelf
 
 
@@ -594,7 +604,7 @@ subroutine prep()
   real(kind=8), dimension(1:nyin4) :: yt4
 
 
-  real(kind=8), dimension(1:nx,1:ny) :: thk, topg, usrf, mask, umod, umodg, umodc, sec, btrc
+  real(kind=8), dimension(1:nx,1:ny) :: thk, thkc, thku, topg, usrf, mask, umod, umodg, umodc, sec, btrc
   real(kind=8), dimension(1:nx) :: x
   real(kind=8), dimension(1:ny) :: y
 
@@ -618,6 +628,12 @@ subroutine prep()
   call ncloadone(xt,yt,tmp,ingeofile,"thk",nxin,nyin)
   thk = tmp(ixlo:ixhi, iylo:iyhi)
   
+  call ncloadone(xt,yt,tmp,ingeofile,"thkc",nxin,nyin)
+  thkc = tmp(ixlo:ixhi, iylo:iyhi)
+
+  call ncloadone(xt,yt,tmp,ingeofile,"thku",nxin,nyin)
+  thku = tmp(ixlo:ixhi, iylo:iyhi)
+
   call ncloadone(xt,yt,tmp,ingeofile,"topg",nxin,nyin)
   topg = tmp(ixlo:ixhi, iylo:iyhi)
  
@@ -659,17 +675,12 @@ subroutine prep()
   call growposdef(umodg,umod,nx,ny,1.0d0,100)
   call computebtrc(topg, thk, umodg, btrc, x(2)-x(1))
 
+  !set velocity to 0 in quiescent regions
   do i = 1,32
      where (sec .eq. qsectors(i))
         umod = 0.0d0
         btrc = csticky
      end where
-
-     !remove ice shelves in quiescent regions
-     !r = (1.0d0 - 918.0d0/1028.d0)
-     !where ( (sec .eq. qsectors(i)) .and. ( (thk*r).gt.(thk+topg)))
-     ! thk = 0.0d0
-     !end where
   end do
 
   !remove any ice that isn't actually part of the AIS
@@ -694,12 +705,32 @@ subroutine prep()
   !also construct and a second set of velocity observations by replacin
   !the Rignot NSIDC velocity dath with the Joughin ASE data
   call insert_joughin(x,y,umod,umodc,nx,ny)
+  !reset set velocity to 0 in quiescent regions
+  do i = 1,32
+     where (sec .eq. qsectors(i))
+        umod = 0.0d0
+        btrc = csticky
+     end where
+  end do
+
 
   call ncaddone(x,y,umod,nx,ny,outctrlfile,"umodj")
   call ncaddone(x,y,umodc,nx,ny,outctrlfile,"umodjc")
+  
+   !loaded thku = std deviation for bedrock, thkc needs to be 
+  ! 1/(2 std dev ^2)
+  where (thku.le.0.0d0)
+     thku = 150.0d0 ! ice shelf std dev not included, but bm2 paper gives 150 m (Griggs?)
+  end where
+  thkc = 1.0d0 / (thku*thku) 
 
+
+  call ncaddone(x,y,thkc,nx,ny,outctrlfile,"thkc")
 
   call ncsaveone(x,y,thk,nx,ny,outgeofile,"thk")
+  
+ 
+ 
   call ncaddone(x,y,topg,nx,ny,outgeofile,"topg")
 
   !4km resolution data (temperature)
@@ -720,7 +751,10 @@ subroutine prep()
      end if
   end do
 
-
+  !just subset the accumulation
+  call ncloadone(xt4,yt4,tmp4,inaccafile,"acca",nxin4,nyin4)
+  temperature4 = tmp4(ixlo4:ixhi4, iylo4:iyhi4)
+  call ncsaveone(x4,y4,temperature4,nx4,ny4,outaccafile,"acca")
   return
 end subroutine prep
 
