@@ -57,7 +57,7 @@ BASEDATA=basedata/Antarctica-bedmap2-1km.nc basedata/Antarctica-temperature-4km.
 %-acca-4km.2d.hdf5: %-acca-4km.nc
 	$(NCTOAMR) $< $@ acca
 
-%-prep: %-geometry-1km.2d.hdf5 %-ctrldata-1km.2d.hdf5 %-ctrldata-j-1km.2d.hdf5 %-sectors-1km.2d.hdf5 %-temperature-4km.2d.hdf5 %-acca-4km.2d.hdf5
+%-prep: %-geometry-1km.2d.hdf5 %-ctrldata-1km.2d.hdf5 %-sectors-1km.2d.hdf5 %-temperature-4km.2d.hdf5 %-acca-4km.2d.hdf5
 	ls -l $? > $@
 
 .PHONY: clean 

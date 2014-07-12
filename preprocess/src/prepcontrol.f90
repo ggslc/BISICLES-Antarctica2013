@@ -704,18 +704,18 @@ subroutine prep()
 
   !also construct and a second set of velocity observations by replacin
   !the Rignot NSIDC velocity dath with the Joughin ASE data
-  call insert_joughin(x,y,umod,umodc,nx,ny)
+  !call insert_joughin(x,y,umod,umodc,nx,ny)
   !reset set velocity to 0 in quiescent regions
-  do i = 1,32
-     where (sec .eq. qsectors(i))
-        umod = 0.0d0
-        btrc = csticky
-     end where
-  end do
+  !do i = 1,32
+  !   where (sec .eq. qsectors(i))
+  !      umod = 0.0d0
+  !      btrc = csticky
+  !   end where
+  !end do
 
 
-  call ncaddone(x,y,umod,nx,ny,outctrlfile,"umodj")
-  call ncaddone(x,y,umodc,nx,ny,outctrlfile,"umodjc")
+  !call ncaddone(x,y,umod,nx,ny,outctrlfile,"umodj")
+  !call ncaddone(x,y,umodc,nx,ny,outctrlfile,"umodjc")
   
    !loaded thku = std deviation for bedrock, thkc needs to be 
   ! 1/(2 std dev ^2)
